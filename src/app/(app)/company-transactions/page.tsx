@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { ArrowDownLeft, ArrowUpRight, PlusCircle } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -34,11 +34,6 @@ function CompanyTransactionsContent() {
         return transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
-
-            if (t.scope === 'company') {
-                return companyMatch && locationMatch;
-            }
-            
             return companyMatch && locationMatch;
         });
     }, [transactions, company, location]);
@@ -107,19 +102,25 @@ function CompanyTransactionsContent() {
                     <div className="space-y-4">
                         {filteredTransactions.length > 0 ? (
                             filteredTransactions.map((tx) => (
-                                <div key={tx.id} className="flex items-center justify-between rounded-lg border p-4">
-                                    <div className="flex items-center gap-4">
-                                        <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-green-100' : 'bg-red-100')}>
-                                            {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
+                                <div key={tx.id} className="rounded-lg border">
+                                    <div className="flex items-center justify-between p-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-green-100' : 'bg-red-100')}>
+                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
+                                            </div>
+                                            <div>
+                                                <p className="font-medium">{TRANSACTION_TYPES[tx.type]}</p>
+                                                <p className="text-sm text-muted-foreground">{formatDate(new Date(tx.timestamp))}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <p className="font-medium">{TRANSACTION_TYPES[tx.type]}</p>
-                                            <p className="text-sm text-muted-foreground">{formatDate(new Date(tx.timestamp))}</p>
-                                        </div>
+                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
+                                            {formatCurrency(tx.amount)}
+                                        </p>
                                     </div>
-                                    <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
-                                        {formatCurrency(tx.amount)}
-                                    </p>
+                                    <div className='border-t p-4 space-y-2 text-sm'>
+                                        {tx.customerName && <div className='flex items-center gap-2'><User className="h-4 w-4 text-muted-foreground" /> <span>{tx.customerName}</span></div>}
+                                        {tx.upiTransactionId && <div className='flex items-center gap-2'><Hash className="h-4 w-4 text-muted-foreground" /> <span>{tx.upiTransactionId}</span></div>}
+                                    </div>
                                 </div>
                             ))
                         ) : (
@@ -134,7 +135,6 @@ function CompanyTransactionsContent() {
                     open={dialogOpen}
                     onOpenChange={setDialogOpen}
                     transactionType={transactionType}
-                    // Pass default company and location, and set the scope to company-only
                     defaults={{
                         companyName: company,
                         location: location || undefined,
