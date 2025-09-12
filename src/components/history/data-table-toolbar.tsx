@@ -2,15 +2,15 @@
 import { Table } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash, Download, Upload } from 'lucide-react';
+import { Trash, Download, FileDown } from 'lucide-react';
 import { DataTableViewOptions } from './data-table-view-options';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { TRANSACTION_TYPES } from '@/lib/constants';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
-import { useState } from 'react';
-import { ImportTransactionsDialog } from '../transactions/import-transactions-dialog';
 import { Transaction } from '@/lib/types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 
 interface DataTableToolbarProps<TData> {
@@ -26,7 +26,6 @@ const transactionTypeOptions = Object.entries(TRANSACTION_TYPES).map(([value, la
 export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>) {
     const { deleteTransactions } = useAppContext();
     const { toast } = useToast();
-    const [isImporting, setIsImporting] = useState(false);
 
     const handleDelete = () => {
         const selectedRows = table.getFilteredSelectedRowModel().rows;
@@ -63,6 +62,40 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
         toast({ title: "Exported to CSV" });
     }
 
+    const exportToPDF = () => {
+      const rows = table.getFilteredRowModel().rows.map(row => row.original as Transaction);
+      if (rows.length === 0) {
+        toast({ variant: "destructive", title: "No data to export" });
+        return;
+      }
+  
+      const doc = new jsPDF();
+      
+      const tableColumn = ["Date", "Type", "Amount", "Customer", "Company", "Location"];
+      const tableRows: any[] = [];
+  
+      rows.forEach(transaction => {
+        const transactionData = [
+          new Date(transaction.timestamp).toLocaleString(),
+          transaction.type,
+          transaction.amount.toString(),
+          transaction.customerName,
+          transaction.companyName,
+          transaction.location,
+        ];
+        tableRows.push(transactionData);
+      });
+  
+      (doc as any).autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 20,
+      });
+      doc.text("Transaction History", 14, 15);
+      doc.save("transactions.pdf");
+      toast({ title: "Exported to PDF" });
+    };
+
   return (
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
@@ -89,9 +122,9 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
                 Delete ({table.getFilteredSelectedRowModel().rows.length})
             </Button>
         )}
-        <Button variant="outline" size="sm" className="h-8" onClick={() => setIsImporting(true)}>
-            <Upload className="mr-2 h-4 w-4" />
-            Import
+        <Button variant="outline" size="sm" className="h-8" onClick={exportToPDF}>
+            <FileDown className="mr-2 h-4 w-4" />
+            PDF
         </Button>
         <Button variant="outline" size="sm" className="h-8" onClick={exportToCSV}>
             <Download className="mr-2 h-4 w-4" />
@@ -99,7 +132,6 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
         </Button>
         <DataTableViewOptions table={table} />
       </div>
-      <ImportTransactionsDialog open={isImporting} onOpenChange={setIsImporting} />
     </div>
   );
 }

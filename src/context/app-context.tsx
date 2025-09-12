@@ -21,8 +21,6 @@ type AppContextType = AppState & {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => void;
   updateVault: (newVault: DenominationVault) => void;
   deleteTransactions: (transactionIds: string[]) => void;
-  importTransactions: (newTransactions: Transaction[]) => void;
-  login: (user: User) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -66,10 +64,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'SET_VAULT', payload: vault });
     dispatch({ type: 'INITIALIZE' });
   }, [user, transactions, vault]);
-  
-  const login = (user: User) => {
-    setUser(user);
-  };
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
     if (!state.user) throw new Error("User not loaded");
@@ -117,18 +111,11 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Note: Deleting transactions does not automatically reverse vault changes for simplicity.
   };
 
-  const importTransactions = (newTransactions: Transaction[]) => {
-    const updatedTransactions = [...newTransactions, ...state.transactions];
-    setTransactions(updatedTransactions);
-  };
-
   const contextValue = useMemo(() => ({
     ...state,
     addTransaction,
     updateVault,
     deleteTransactions,
-    importTransactions,
-    login,
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }), [state]);
 
