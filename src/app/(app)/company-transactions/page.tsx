@@ -70,7 +70,7 @@ function CompanyTransactionsContent() {
                  <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => handleOpenDialog('UPI_DEBIT')}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        credit ho upi
+                        payment credit ho
                     </Button>
                     <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                          <PlusCircle className="mr-2 h-4 w-4" />
