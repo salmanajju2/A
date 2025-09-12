@@ -47,8 +47,7 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
   }
 
   return (
-    <Collapsible asChild>
-      <>
+    <Collapsible>
         <Card className="w-full">
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-4">
@@ -119,7 +118,6 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
           onOpenChange={setIsEditDialogOpen}
           transaction={transaction}
         />
-      </>
     </Collapsible>
   );
 }
