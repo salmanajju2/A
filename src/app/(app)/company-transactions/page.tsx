@@ -82,8 +82,8 @@ function CompanyTransactionsContent() {
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
 
         sortedTransactions.forEach(tx => {
-            if (tx.type.includes('CREDIT')) {
-                const customer = tx.customerName || 'N/A';
+            if (tx.type.includes('CREDIT') && tx.customerName) {
+                const customer = tx.customerName;
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
@@ -123,7 +123,7 @@ function CompanyTransactionsContent() {
         const footer = [];
         footer.push([
             { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' }},
-            { content: totalCredit, styles: { fillColor: '#dff0d8', fontStyle: 'bold' } }
+            { content: totalCredit, styles: { fontStyle: 'bold' } }
         ]);
 
         const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
@@ -133,12 +133,12 @@ function CompanyTransactionsContent() {
         for (let i = debitEntries.length; i < 8; i++) {
             entryRow.push('');
         }
-        entryRow.push({ content: totalDebit, styles: { fillColor: '#f2dede', fontStyle: 'bold' } });
+        entryRow.push({ content: totalDebit, styles: { fontStyle: 'bold' } });
         footer.push(entryRow);
         
         footer.push([
             { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: closingBalance, styles: { fillColor: '#dff0d8', fontStyle: 'bold' } }
+            { content: closingBalance, styles: { fontStyle: 'bold' } }
         ]);
 
         (doc as any).autoTable({
@@ -306,3 +306,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
