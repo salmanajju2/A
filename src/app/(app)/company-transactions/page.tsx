@@ -71,25 +71,21 @@ function CompanyTransactionsContent() {
     const handleDownloadPdf = () => {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
-        const pageTitle = `Report for ${company} ${location || ''}`.trim();
-        const formattedDate = generationDate.toLocaleString('en-IN', {
-            day: '2-digit',
-            month: '2-digit',
+    
+        doc.setFontSize(14);
+        doc.text(`Generated on: ${generationDate.toLocaleString('en-IN', {
             year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
+            month: 'numeric',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: 'numeric',
+            second: 'numeric',
             hour12: true
-        }).replace(/,/g, '');
-
-        doc.setFontSize(22);
-        doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text(`Generated on: ${formattedDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
+        })}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
     
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
-
+    
         const sortedTransactions = [...filteredTransactions].sort((a, b) => {
             const nameA = a.customerName || 'z';
             const nameB = b.customerName || 'z';
@@ -102,99 +98,81 @@ function CompanyTransactionsContent() {
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
-                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 3) {
+                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 4) {
                     customerCredits[customer].cash.push(tx.amount);
-                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 3) {
+                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 4) {
                     customerCredits[customer].upi.push(tx.amount);
                 }
                 customerCredits[customer].total += tx.amount;
-            } else if (tx.type.includes('DEBIT')) {
-                if (tx.type.includes('CASH') && debitEntries.cash.length < 3) {
-                    debitEntries.cash.push(tx.amount);
-                } else if (tx.type.includes('UPI') && debitEntries.upi.length < 3) {
-                    debitEntries.upi.push(tx.amount);
-                }
+            } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
+                 if (tx.denominations && Object.keys(tx.denominations).length > 0) {
+                     if (debitEntries.cash.length < 4) debitEntries.cash.push(tx.amount);
+                 } else {
+                     if (debitEntries.upi.length < 4) debitEntries.upi.push(tx.amount);
+                 }
             }
         });
     
         const head = [
-            [{ content: 'NAME', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'CASH', colSpan: 3, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 3, styles: { halign: 'center' } }, { content: 'TOTAL', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
-            ['CASH 1ST', 'CASH 2ND', 'CASH 3RD', 'UPI 1ST', 'UPI 2ND', 'UPI 3RD']
+            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
+            ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const row: (string | number)[] = [name];
-            for (let i = 0; i < 3; i++) row.push(data.cash[i] || '');
-            for (let i = 0; i < 3; i++) row.push(data.upi[i] || '');
-            row.push(data.total);
+            for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
+            for (let i = 0; i < 4; i++) row.push(data.upi[i] || '');
+            row.push(`₹${data.total.toLocaleString('en-IN')}`);
             return row;
         });
-
+    
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = [...debitEntries.cash, ...debitEntries.upi].reduce((s, a) => s + a, 0);
         const closingBalance = totalCredit - totalDebit;
-        
-        const debitRow = ['ENTRY'];
-        for (let i = 0; i < 3; i++) debitRow.push(debitEntries.cash[i] || '');
-        for (let i = 0; i < 3; i++) debitRow.push(debitEntries.upi[i] || '');
-        debitRow.push(totalDebit);
-        
+    
         const footer = [
-            [{ content: 'TOTAL', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: totalCredit, styles: { fillColor: [76, 175, 80], textColor: [255,255,255], fontStyle: 'bold' } }],
-            debitRow.map((content, index) => ({
-                 content,
-                 styles: { 
-                     fontStyle: 'bold',
-                     halign: index === 0 ? 'center' : 'right',
-                     fillColor: index === 7 ? [255, 235, 59] : undefined
-                }
-            })),
-            [{ content: 'BALANCE', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: closingBalance, styles: { fillColor: closingBalance < 0 ? [244, 67, 54] : [76, 175, 80], textColor: [255,255,255], fontStyle: 'bold' } }]
+            [{ content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₹${totalCredit.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [213, 245, 227] } }],
+            [{ content: 'Entry', colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
+             ...debitEntries.cash, ...Array(4 - debitEntries.cash.length).fill(''),
+             ...debitEntries.upi, ...Array(4 - debitEntries.upi.length).fill(''),
+             { content: `₹${totalDebit.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [255, 204, 204] } }
+            ],
+            [{ content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₹${closingBalance.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [213, 245, 227] } }]
         ];
-
+    
         (doc as any).autoTable({
             head: head,
             body: body,
             foot: footer,
-            startY: 45,
+            startY: 25,
             theme: 'grid',
             headStyles: {
-                fillColor: [255, 192, 203], // Light pink
+                fillColor: [240, 240, 240],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center'
             },
             columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 40, fillColor: [211,211,211] }, // Name column with grey background
-                1: { halign: 'right' },
-                2: { halign: 'right' },
-                3: { halign: 'right' },
-                4: { halign: 'right' },
-                5: { halign: 'right' },
-                6: { halign: 'right' },
-                7: { halign: 'right', fontStyle: 'bold', fillColor: [76, 175, 80], textColor: [255,255,255] } // Total column with green background
+                0: { fontStyle: 'bold', fillColor: [240, 240, 240] }, // Customer Name
+                9: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } // Total Credit
             },
             didParseCell: function(data: any) {
-                 if (data.cell.raw !== '' && !isNaN(Number(data.cell.raw))) {
-                    data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
-                 }
-                 if(data.section === 'foot' && data.row.index === 1 && data.column.index > 0 && data.column.index < 7) {
-                    data.cell.styles.fillColor = undefined;
-                 }
-                 if(data.section === 'foot' && data.row.index === 1) {
-                     data.cell.styles.halign = data.column.index === 0 ? 'center' : 'right';
-                 }
-                  if(data.section === 'foot' && (data.row.index === 0 || data.row.index === 2)) {
+                if (data.section === 'body' && data.column.index > 0 && data.column.index < 9) {
+                     if (data.cell.raw !== '') {
+                        data.cell.text = [`₹${Number(data.cell.raw).toLocaleString('en-IN')}`]
+                     }
                      data.cell.styles.halign = 'right';
-                 }
+                }
+                 if (data.section === 'foot' && data.row.index === 1 && data.column.index > 0 && data.column.index < 9) {
+                     if (data.cell.raw !== '') {
+                        data.cell.text = [`₹${Number(data.cell.raw).toLocaleString('en-IN')}`]
+                     }
+                     data.cell.styles.halign = 'right';
+                }
             },
         });
-
-        const finalY = (doc as any).lastAutoTable.finalY;
-        doc.setFontSize(10);
-        doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, finalY + 10);
     
-        doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
+        doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
     }
 
     if (!company) {
@@ -307,7 +285,7 @@ function CompanyTransactionsContent() {
                     </div>
                 </CardContent>
             </Card>
-            {transactionType && (
+            {dialogOpen && (
                 <TransactionDialog
                     open={dialogOpen}
                     onOpenChange={setDialogOpen}
@@ -331,5 +309,7 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
