@@ -124,17 +124,17 @@ function CompanyTransactionsContent() {
         const footerRows = [
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: '#28a745' } }
+                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries.slice(0,8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' }})),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: '#dc3545' } }
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? '#28a745' : '#dc3545' } }
+                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
             ]
         ];
         
@@ -156,20 +156,6 @@ function CompanyTransactionsContent() {
                 fillColor: '#f2f2f2',
                 textColor: '#000000',
                 fontStyle: 'bold',
-            },
-            footStyles: {
-                fontStyle: 'bold'
-            },
-            didDrawCell: (data) => {
-                if (data.section === 'foot' && data.row.index === 1) {
-                    doc.setFillColor('#ffe6e6'); // Light Red
-                    doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
-                    doc.setTextColor(0,0,0);
-                    doc.setFont('helvetica', 'bold');
-                    doc.text(String(data.cell.text), data.cell.x + data.cell.padding('left'), data.cell.y + data.cell.height / 2, {
-                        baseline: 'middle'
-                    });
-                }
             },
             styles: {
                 textColor: '#000000',
