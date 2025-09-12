@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { TransactionDialog } from '@/components/transactions/transaction-dialog';
-import { TRANSACTION_TYPES, COMPANY_NAMES } from '@/lib/constants';
+import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
@@ -72,28 +72,17 @@ function CompanyTransactionsContent() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
     
-        doc.setFontSize(12);
-        doc.text(`Generated on: ${generationDate.toLocaleString('en-IN', {
-            year: 'numeric',
-            month: 'numeric',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric',
-            hour12: true
-        })}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-    
+        const title = `${company} ${location || ''}`.trim();
+        doc.setFontSize(16);
+        doc.text(title, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+        doc.setFontSize(10);
+        doc.text(`Date: ${generationDate.toLocaleDateString('en-IN')}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
-    
-        const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-            const nameA = a.customerName || 'zzz'; // sort undefined/null to the end
-            const nameB = b.customerName || 'zzz';
-            if (!a.customerName) return 1;
-            if (!b.customerName) return -1;
-            return nameA.localeCompare(nameB);
-        });
-    
+        
+        const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
+
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT')) {
                 const customer = tx.customerName || 'N/A';
@@ -134,19 +123,22 @@ function CompanyTransactionsContent() {
 
         const footer = [
             [
-                { content: 'Entry', rowSpan: 3, styles: { halign: 'center', valign: 'middle', fillColor: [26, 188, 156], textColor: [255, 255, 255], fontStyle: 'bold' } },
                 { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' }},
-                { content: '', colSpan: 7 },
-                { content: totalCredit, styles: { halign: 'right', fontStyle: 'bold', fillColor: [213, 245, 227] } }
+                { content: '', colSpan: 8 },
+                { content: totalCredit, styles: { halign: 'right', fontStyle: 'bold', textColor: [0, 128, 0] } } // Green text
             ],
             [
-                { content: '', colSpan: 8, styles: {halign: 'right'}},
-                { content: totalDebit, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 204, 204] } }
+                { content: 'Entry', styles: { halign: 'left', fontStyle: 'bold', textColor: [255, 0, 0] }}, // Red text
+                ...debitEntries.cash.slice(0, 4).map(v => ({ content: v, styles: { textColor: [255, 0, 0] }})),
+                ...Array(4 - debitEntries.cash.length).fill(''),
+                ...debitEntries.upi.slice(0, 4).map(v => ({ content: v, styles: { textColor: [255, 0, 0] }})),
+                ...Array(4 - debitEntries.upi.length).fill(''),
+                { content: totalDebit, styles: { halign: 'right', fontStyle: 'bold', textColor: [255, 0, 0] } } // Red text
             ],
             [
                 { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: '', colSpan: 7 },
-                { content: closingBalance, styles: { halign: 'right', fontStyle: 'bold', fillColor: [213, 245, 227] } }
+                { content: '', colSpan: 8 },
+                { content: closingBalance, styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance < 0 ? [255, 0, 0] : [0, 128, 0] } }
             ]
         ];
 
@@ -154,38 +146,34 @@ function CompanyTransactionsContent() {
             head: head,
             body: body,
             foot: footer,
-            startY: 25,
+            startY: 20,
             theme: 'grid',
             headStyles: {
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center'
             },
-            footStyles: {
-                halign: 'right',
-            },
             columnStyles: {
                 0: { fontStyle: 'bold', fillColor: [230, 230, 230] }, // Customer Name
                 9: { fontStyle: 'bold', halign: 'right' } // Total Credit
             },
             didParseCell: function(data: any) {
-                if ((data.section === 'body' || data.section === 'foot') && data.column.index > 0) {
-                     if (typeof data.cell.raw === 'number') {
-                        data.cell.text = [data.cell.raw.toLocaleString('en-IN', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                        })]
-                     }
-                     data.cell.styles.halign = 'right';
+                // Format all numbers
+                 if ((data.section === 'body' || data.section === 'foot') && typeof data.cell.raw === 'number') {
+                    data.cell.text = [data.cell.raw.toLocaleString('en-IN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                    })];
+                    data.cell.styles.halign = 'right';
                 }
-                if(data.section === 'foot') {
-                    if(data.row.index === 0 && data.column.index === 9) data.cell.styles.fillColor = [213, 245, 227];
-                    if(data.row.index === 1 && data.column.index === 9) data.cell.styles.fillColor = [255, 204, 204];
-                    if(data.row.index === 2 && data.column.index === 9) data.cell.styles.fillColor = [213, 245, 227];
+
+                // Customer Total Credit font color
+                if (data.section === 'body' && data.column.index === 9) {
+                    data.cell.styles.textColor = [0, 128, 0]; // Green
                 }
             },
             didDrawPage: function (data: any) {
-                const finalY = data.cursor.y;
+                const finalY = (doc as any).lastAutoTable.finalY || data.cursor.y;
                 doc.setFontSize(10);
                 doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, data.settings.margin.left, finalY + 10);
             }
