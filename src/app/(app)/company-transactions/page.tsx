@@ -130,7 +130,7 @@ function CompanyTransactionsContent() {
 
         const formatValue = (value: any) => {
              if (typeof value === 'number') {
-                return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                return value.toLocaleString('en-IN');
             }
             return value;
         }
@@ -142,7 +142,7 @@ function CompanyTransactionsContent() {
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: formatValue(amt), styles: { halign: 'right' } })),
+                ...debitEntries.slice(0, 8).map(amt => formatValue(amt)),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
                 { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
             ],
