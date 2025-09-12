@@ -78,8 +78,12 @@ function CompanyTransactionsContent() {
         const generationDate = new Date();
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        
+        // --- Colors ---
         const blackColor = '#000000';
         const lightGreyColor = '#f2f2f2';
+        const greenColor = '#008000';
+        const redColor = '#ff0000';
 
         // Main Title
         doc.setFontSize(22);
@@ -97,7 +101,6 @@ function CompanyTransactionsContent() {
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
     
-        // Sort by customer name to group them
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
     
         sortedTransactions.forEach(tx => {
@@ -119,10 +122,10 @@ function CompanyTransactionsContent() {
     
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const row: (string | { content: string; styles: any })[] = [name];
-            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? data.cash[i].toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '');
-            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? data.upi[i].toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '');
-            row.push({ content: data.total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), styles: { fontStyle: 'bold' } });
+            const row: (string | number)[] = [name];
+            for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
+            for (let i = 0; i < 4; i++) row.push(data.upi[i] || '');
+            row.push(data.total);
             return row;
         });
 
@@ -130,25 +133,32 @@ function CompanyTransactionsContent() {
         const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const formatFooterAmount = (amount: number) => {
-            return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const formatValue = (value: any) => {
+             if (typeof value === 'number') {
+                return value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+            return value;
         }
-
+        
+        const formatFooterAmount = (amount: number) => {
+            return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+        
         // --- Footer Rows ---
         const footerRows = [
             [
-                { content: 'Total Credit', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(totalCredit), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(totalCredit), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: amt.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), styles: { halign: 'right'} })),
+                ...debitEntries.slice(0, 8).map(amt => formatValue(amt)),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatFooterAmount(totalDebit), colSpan: 1, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } },
             ],
             [
-                { content: 'Closing Balance', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(closingBalance), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
         ];
         
@@ -171,14 +181,13 @@ function CompanyTransactionsContent() {
                 fillColor: lightGreyColor,
                 textColor: blackColor,
                 fontStyle: 'bold',
-                halign: 'center',
             },
             styles: {
                 textColor: blackColor,
-                lineColor: [200, 200, 200], // Light grey for grid lines
+                lineColor: [200, 200, 200],
             },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: lightGreyColor, halign: 'left' },
+                0: { fontStyle: 'bold', fillColor: lightGreyColor },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -189,8 +198,31 @@ function CompanyTransactionsContent() {
                 8: { halign: 'right' },
                 9: { halign: 'right', fontStyle: 'bold' },
             },
+            didParseCell: function(data: any) {
+                // Format all numeric cells
+                if (typeof data.cell.raw === 'number') {
+                    data.cell.text = [formatValue(data.cell.raw)];
+                }
+
+                // Color footer rows
+                const rawText = data.row.cells[0]?.raw?.toString() || '';
+                if (rawText.includes('Total Credit')) {
+                    const amountCell = data.row.cells[data.row.cells.length - 1];
+                    amountCell.styles.textColor = greenColor;
+                } else if (rawText.includes('Entry')) {
+                    const amountCell = data.row.cells[data.row.cells.length - 1];
+                    amountCell.styles.textColor = redColor;
+                } else if (rawText.includes('Closing Balance')) {
+                    const amountCell = data.row.cells[data.row.cells.length - 1];
+                    if (closingBalance >= 0) {
+                        amountCell.styles.textColor = greenColor;
+                    } else {
+                        amountCell.styles.textColor = redColor;
+                    }
+                }
+            },
             didDrawPage: function(data) {
-                // Remove footer to avoid default page numbering
+                // Remove default page numbering
             }
         });
     
