@@ -136,7 +136,7 @@ function CompanyTransactionsContent() {
         const debitEntries = entryTransactions.map(tx => tx.amount);
 
         const closingBalance = totalCredit - totalDebit;
-
+        
         const head = [
             [
                 { content: 'Customer Name', rowSpan: 2 },
@@ -158,18 +158,18 @@ function CompanyTransactionsContent() {
 
         const foot = [
              [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'center' } },
                 { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right' } }
             ],
             [
-                { content: 'Entry', styles: { fontStyle: 'bold' } },
+                { content: 'Entry', colSpan: 1 },
                 { content: debitEntries[0] ? formatCurrency(debitEntries[0], { symbol: '' }) : '', styles: { halign: 'right' } },
                 { content: debitEntries[1] ? formatCurrency(debitEntries[1], { symbol: '' }) : '', styles: { halign: 'right' } },
-                '', '', '', '', '', '',
+                { content: '', colSpan: 6 },
                 { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right' } }
             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'center' } },
                 { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right' } }
             ]
         ];
@@ -184,8 +184,9 @@ function CompanyTransactionsContent() {
                 font: 'helvetica',
                 fontStyle: 'bold',
                 lineWidth: 0.1,
-                lineColor: [0, 0, 0],
-                textColor: [0, 0, 0],
+                lineColor: [255, 255, 255],
+                textColor: [255, 255, 255],
+                fillColor: '#008080'
             },
             headStyles: {
                 halign: 'center',
@@ -202,14 +203,13 @@ function CompanyTransactionsContent() {
                 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
                 9: { halign: 'right' },
             },
-            didParseCell: (data) => {
-                 if (data.section === 'body') {
-                    data.cell.styles.fontStyle = 'normal';
-                 }
-                 if(data.section === 'foot' && data.row.index === 1 && data.column.index === 0) {
-                     data.cell.styles.halign = 'left';
-                 }
-            }
+             didParseCell: (data) => {
+                if (data.section === 'body') {
+                    data.cell.styles.fillColor = '#FFFFFF';
+                    data.cell.styles.textColor = '#000000';
+                    data.cell.styles.lineColor = '#008080';
+                }
+             }
         });
     
         doc.save(`${company}_${location ? location + '_' : ''}${new Date().toISOString().split('T')[0]}.pdf`);
@@ -351,5 +351,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
