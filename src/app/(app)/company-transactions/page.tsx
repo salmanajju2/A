@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash, FileDown, Pencil, Trash, ChevronDown } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PlusCircle, Hash, FileDown, Pencil, Trash, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -60,7 +60,6 @@ function CompanyTransactionsContent() {
 
     const handleEdit = (transaction: Transaction) => {
         setEditingTransaction(transaction);
-        setTransactionType(transaction.type);
         setDialogOpen(true);
     };
 
@@ -74,15 +73,23 @@ function CompanyTransactionsContent() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
         const pageTitle = `Report for ${company} ${location || ''}`.trim();
-        const reportDate = generationDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const formattedDate = generationDate.toLocaleString('en-IN', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).replace(/,/g, '');
 
         // 1. Set up headers
         doc.setFontSize(10);
-        doc.text(`${generationDate.toLocaleDateString()}, ${generationDate.toLocaleTimeString()}`, 14, 15);
+        doc.text(formattedDate, 14, 15);
         doc.setFontSize(22);
         doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
         doc.setFontSize(10);
-        doc.text(`Generated on: ${generationDate.toLocaleString()}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
+        doc.text(`Generated on: ${formattedDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
     
         // 2. Process data
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
@@ -100,16 +107,16 @@ function CompanyTransactionsContent() {
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
-                if (tx.type === 'CASH_CREDIT') {
+                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 4) {
                     customerCredits[customer].cash.push(tx.amount);
-                } else if (tx.type === 'UPI_CREDIT') {
+                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 4) {
                     customerCredits[customer].upi.push(tx.amount);
                 }
                 customerCredits[customer].total += tx.amount;
             } else if (tx.type.includes('DEBIT')) {
-                if (tx.type.includes('CASH')) {
+                if (tx.type.includes('CASH') && debitEntries.cash.length < 4) {
                     debitEntries.cash.push(tx.amount);
-                } else if (tx.type.includes('UPI')) {
+                } else if (tx.type.includes('UPI') && debitEntries.upi.length < 4) {
                     debitEntries.upi.push(tx.amount);
                 }
             }
@@ -123,9 +130,9 @@ function CompanyTransactionsContent() {
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const row: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? `₹${data.cash[i].toLocaleString('en-IN')}`: '');
-            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? `₹${data.upi[i].toLocaleString('en-IN')}`: '');
-            row.push(`₹${data.total.toLocaleString('en-IN')}`);
+            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? data.cash[i].toLocaleString('en-IN') : '');
+            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? data.upi[i].toLocaleString('en-IN') : '');
+            row.push(data.total.toLocaleString('en-IN'));
             return row;
         });
 
@@ -135,38 +142,30 @@ function CompanyTransactionsContent() {
         const totalDebit = totalDebitCash + totalDebitUpi;
         const closingBalance = totalCredit - totalDebit;
 
-        const footer = [
-            { content: '', colSpan: 9 },
-            { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: `₹${totalCredit.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#dff0d8' } },
-        ];
-
-        const entryRow: (string | number)[] = ['Entry'];
-        const allDebitEntries = [...debitEntries.cash, ...debitEntries.upi];
-        for (let i = 0; i < 8; i++) {
-             entryRow.push(allDebitEntries[i] ? `₹${allDebitEntries[i].toLocaleString('en-IN')}`: '');
-        }
-        
-        const footerWithEntry = [
+        const bodyWithTotals = [
             ...body,
-            footer,
+            [
+                { content: '', colSpan: 9 },
+                { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: totalCredit.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#dff0d8' } },
+            ],
             [
                 'Entry',
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? `₹${debitEntries.cash[i].toLocaleString('en-IN')}` : ''),
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? `₹${debitEntries.upi[i].toLocaleString('en-IN')}` : ''),
-                { content: `₹${totalDebit.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#f2dede' } }
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? debitEntries.cash[i].toLocaleString('en-IN') : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? debitEntries.upi[i].toLocaleString('en-IN') : ''),
+                { content: totalDebit.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#f2dede' } }
             ],
              [
                 { content: '', colSpan: 9 },
                 { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: `₹${closingBalance.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } },
+                { content: closingBalance.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } },
             ]
         ];
 
         // 4. Generate table
         (doc as any).autoTable({
             head: head,
-            body: footerWithEntry,
+            body: bodyWithTotals,
             startY: 45,
             theme: 'grid',
             headStyles: {
@@ -181,10 +180,11 @@ function CompanyTransactionsContent() {
             },
             columnStyles: {
                 0: { fontStyle: 'bold', cellWidth: 35 },
-                10: { halign: 'right' }
+                10: { halign: 'right', fontStyle: 'bold' }
             },
             didParseCell: function(data: any) {
-                if (data.section === 'body' && data.column.index > 0 && data.column.index <= 10) {
+                // Right-align all numeric columns except the first one
+                if (data.section === 'body' && data.column.index > 0 && data.column.index < 10) {
                     data.cell.styles.halign = 'right';
                 }
             }
