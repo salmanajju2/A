@@ -75,7 +75,7 @@ function CompanyTransactionsContent() {
                  <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        ye payment esi page pr show ho
+                        add upi kro
                     </Button>
                     <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                          <PlusCircle className="mr-2 h-4 w-4" />
