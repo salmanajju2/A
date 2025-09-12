@@ -14,7 +14,7 @@ import { useRouter } from 'next/navigation';
 import { TransactionDialog } from '@/components/transactions/transaction-dialog';
 import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { numberToWords } from '@/lib/number-to-words';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -81,7 +81,7 @@ function CompanyTransactionsContent() {
         
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+        doc.text(`Report for ${company} ${location || ''}`.trim(), doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
     
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
@@ -98,9 +98,9 @@ function CompanyTransactionsContent() {
                     customerCredits[tx.customerName] = { cash: [], upi: [], total: 0 };
                 }
                 const customer = customerCredits[tx.customerName];
-                if (tx.type === 'CASH_CREDIT' && customer.cash.length < 4) {
+                if (tx.type === 'CASH_CREDIT') {
                     customer.cash.push(tx.amount);
-                } else if (tx.type === 'UPI_CREDIT' && customer.upi.length < 4) {
+                } else if (tx.type === 'UPI_CREDIT') {
                     customer.upi.push(tx.amount);
                 }
                 customer.total += tx.amount;
@@ -113,8 +113,8 @@ function CompanyTransactionsContent() {
             const rowData: (string | number)[] = [name];
             for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
             for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
-            rowData.push(data.total);
-            return rowData.map(cell => (typeof cell === 'number' ? formatCurrency(cell) : cell));
+            rowData.push(formatCurrency(data.total, { symbol: '' }));
+            return rowData;
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
@@ -122,23 +122,24 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
 
         const footerRows = [
+            [{ content: '', colSpan: 10, styles: { minCellHeight: 2 } }], // Spacer row
             [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
+                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' } })),
+                ...debitEntries.slice(0, 8).map(amt => formatCurrency(amt, { symbol: '' })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } },
+                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
             ]
         ];
         
-        doc.autoTable({
+        autoTable(doc, {
             head: [
                 [
                     { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
@@ -152,31 +153,57 @@ function CompanyTransactionsContent() {
             foot: footerRows,
             startY: 35,
             theme: 'grid',
-            headStyles: {
-                fillColor: '#f2f2f2',
-                textColor: '#000000',
-                fontStyle: 'bold',
-            },
-            footStyles: {
-                textColor: '#000000',
-                fontStyle: 'bold',
-            },
             styles: {
                 textColor: '#000000',
                 lineColor: [0, 0, 0],
-                lineWidth: 0.1
+                lineWidth: 0.1,
+                font: 'helvetica',
+                fontStyle: 'bold'
+            },
+            headStyles: {
+                fillColor: '#ffffff',
+                textColor: '#000000',
+                fontStyle: 'bold',
+            },
+            bodyStyles: {
+                fontStyle: 'normal'
+            },
+            footStyles: {
+                fontStyle: 'bold'
             },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: '#f2f2f2' },
-                1: { halign: 'right' },
-                2: { halign: 'right' },
-                3: { halign: 'right' },
-                4: { halign: 'right' },
-                5: { halign: 'right' },
-                6: { halign: 'right' },
-                7: { halign: 'right' },
-                8: { halign: 'right' },
+                0: { fontStyle: 'bold' },
+                1: { halign: 'right', fontStyle: 'normal' },
+                2: { halign: 'right', fontStyle: 'normal' },
+                3: { halign: 'right', fontStyle: 'normal' },
+                4: { halign: 'right', fontStyle: 'normal' },
+                5: { halign: 'right', fontStyle: 'normal' },
+                6: { halign: 'right', fontStyle: 'normal' },
+                7: { halign: 'right', fontStyle: 'normal' },
+                8: { halign: 'right', fontStyle: 'normal' },
                 9: { halign: 'right', fontStyle: 'bold' },
+            },
+             didParseCell: function (data) {
+                if (data.section === 'body' && typeof data.cell.raw === 'number') {
+                     data.cell.text = [formatCurrency(data.cell.raw, { symbol: '' })];
+                }
+                // Add currency symbol for specific body cells
+                if (data.section === 'body' && data.column.index > 0) {
+                    if (data.cell.raw !== '') {
+                        data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, ''))) ];
+                    }
+                }
+                 // Add currency symbol for footer
+                if (data.section === 'foot') {
+                    if ((data.row.index === 1 || data.row.index === 2 || data.row.index === 3) && data.column.index === 9) {
+                         data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, '')))];
+                    }
+                     if (data.row.index === 2 && data.column.index > 0 && data.column.index < 9) {
+                         if (data.cell.raw !== '') {
+                            data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, '')))];
+                         }
+                    }
+                }
             },
         });
     
