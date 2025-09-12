@@ -81,7 +81,7 @@ function CompanyTransactionsContent() {
         
         // --- Colors ---
         const blackColor = '#000000';
-        const lightGreyColor = '#f2f2f2';
+        const greyColor = '#f2f2f2';
         const greenColor = '#008000';
         const redColor = '#ff0000';
 
@@ -144,7 +144,6 @@ function CompanyTransactionsContent() {
             return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
         
-        // --- Footer Rows ---
         const footerRows = [
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -154,14 +153,14 @@ function CompanyTransactionsContent() {
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries.slice(0, 8).map(amt => ({ content: formatValue(amt), styles: { halign: 'right' } })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } },
+                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
                 { content: formatFooterAmount(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
             ],
         ];
-        
+
         body.push(...footerRows as any);
 
         doc.autoTable({
@@ -178,7 +177,7 @@ function CompanyTransactionsContent() {
             startY: 35,
             theme: 'grid',
             headStyles: {
-                fillColor: lightGreyColor,
+                fillColor: greyColor,
                 textColor: blackColor,
                 fontStyle: 'bold',
             },
@@ -187,7 +186,7 @@ function CompanyTransactionsContent() {
                 lineColor: [200, 200, 200],
             },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: lightGreyColor },
+                0: { fontStyle: 'bold', fillColor: greyColor },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
