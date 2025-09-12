@@ -76,18 +76,23 @@ function CompanyTransactionsContent() {
     const handleDownloadPdf = () => {
         const doc = new jsPDF() as jsPDFWithAutoTable;
         const pageTitle = `Report for ${company} ${location || ''}`.trim();
-        const generatedDate = `Generated on: ${new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'medium' })}`;
+        const generatedDate = `Generated on: ${new Date().toLocaleString('en-IN', {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        }).replace(/, /g, ', ')}`;
 
-        // Add main title
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
 
-        // Add subtitle
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
         doc.text(generatedDate, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-
 
         const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[] } } = {};
 
@@ -109,27 +114,28 @@ function CompanyTransactionsContent() {
 
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const total = [...data.cash, ...data.upi].reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
-            const formattedCash = data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: '₹' }) : c);
-            const formattedUpi = data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: '₹' }) : u);
-            return [name, ...formattedCash, ...formattedUpi, formatCurrency(total, { symbol: '₹' })];
+            return [
+                name,
+                ...data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: '' }) : c),
+                ...data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: '' }) : u),
+                formatCurrency(total, { symbol: '' })
+            ];
         });
 
         const totalCredit = body.reduce((sum, row) => {
-            const totalString = (row[row.length - 1] as string).replace(/[₹,]/g, '');
-            return sum + parseFloat(totalString);
+            const totalString = (row[row.length - 1] as string).replace(/[,]/g, '');
+            return sum + (parseFloat(totalString) || 0);
         }, 0);
 
         const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
-        const entryAmounts = [0, 0, 0, 0];
+        const entryAmounts = ['', '', '', ''];
         entryTransactions.forEach(tx => {
-            // This is a simplification; in a real scenario you'd need to know which "slot" the entry belongs to.
-            // For now, we'll just put them in the first available slots.
-            const emptyIndex = entryAmounts.findIndex(a => a === 0);
+            const emptyIndex = entryAmounts.findIndex(a => a === '');
             if (emptyIndex !== -1) {
-                entryAmounts[emptyIndex] = tx.amount;
+                entryAmounts[emptyIndex] = formatCurrency(tx.amount, { symbol: '' });
             }
         });
-        const totalDebit = entryAmounts.reduce((sum, amount) => sum + amount, 0);
+        const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
         const closingBalance = totalCredit - totalDebit;
 
@@ -137,45 +143,45 @@ function CompanyTransactionsContent() {
             startY: 40,
             head: [
                 [
-                    { content: 'Customer Name', rowSpan: 2, styles: { fontStyle: 'bold', halign: 'center', valign: 'middle' } },
-                    { content: 'Cash', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } },
-                    { content: 'UPI', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { fontStyle: 'bold', halign: 'center', valign: 'middle' } },
+                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                    { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
+                    { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
+                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
                 ],
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
             body: body,
             foot: [
                 [
-                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fillColor: '#e6f7ec', fontStyle: 'bold', halign: 'right' } }
+                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
+                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { fillColor: '#e6f7ec', halign: 'right' } }
                 ],
                 [
-                    { content: 'Entry', styles: { fontStyle: 'bold' } },
-                    ...entryAmounts.map(amt => amt > 0 ? { content: formatCurrency(amt, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } } : ''),
+                    'Entry',
+                    ...entryAmounts,
                      '', '', '', '', // Empty cells for UPI
-                    { content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fillColor: '#ffe6e6', fontStyle: 'bold', halign: 'right' } }
+                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { fillColor: '#ffe6e6', halign: 'right' } }
                 ],
                 [
-                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fillColor: '#ffe6e6', fontStyle: 'bold', halign: 'right' } }
+                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
+                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fillColor: '#ffe6e6', halign: 'right' } }
                 ]
             ],
             theme: 'grid',
             styles: {
                 font: 'helvetica',
-                fontStyle: 'bold', // Make all text bold
+                fontStyle: 'bold',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
             },
             headStyles: {
-                fillColor: '#FFFFFF',
+                fillColor: '#f2f2f2',
                 textColor: '#000000',
                 halign: 'center',
             },
             footStyles: {
-                fillColor: '#FFFFFF',
                 textColor: '#000000',
+                halign: 'right'
             },
             columnStyles: {
                 0: { halign: 'left' },
@@ -190,8 +196,11 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right' },
             },
             didDrawCell: (data) => {
-                 if (data.row.section === 'head' || data.column.dataKey === 0) {
+                 if (data.row.section === 'head') {
                      data.cell.styles.fillColor = '#f2f2f2';
+                 }
+                 if (data.column.index === 0 && data.row.section === 'body') {
+                    data.cell.styles.fillColor = '#f2f2f2';
                  }
             }
         });
