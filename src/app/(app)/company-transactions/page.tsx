@@ -73,15 +73,19 @@ function CompanyTransactionsContent() {
         const generationDate = new Date();
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+        const blackColor = '#000000';
     
         // Main Title
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(blackColor);
         doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
     
         // Sub Title
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
+        doc.setTextColor(blackColor);
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
     
@@ -112,9 +116,9 @@ function CompanyTransactionsContent() {
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const rowData: any[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i], { symbol: '' }) : '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i], { symbol: '' }) : '');
-            rowData.push({ content: formatCurrency(data.total, { symbol: '' }), styles: { fontStyle: 'bold' } });
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i]) : '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i]) : '');
+            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold' } });
             return rowData;
         });
     
@@ -157,9 +161,11 @@ function CompanyTransactionsContent() {
             startY: 35,
             theme: 'grid',
             headStyles: {
-                fillColor: [230, 230, 230],
-                textColor: [0, 0, 0],
+                textColor: blackColor,
                 fontStyle: 'bold'
+            },
+            styles: {
+                textColor: blackColor
             },
             columnStyles: {
                 0: { fontStyle: 'bold' },

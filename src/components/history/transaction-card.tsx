@@ -57,14 +57,12 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                     aria-label={`Select transaction ${transaction.id}`}
                 />
                 <div
-                    className={`flex items-center justify-center h-10 w-10 rounded-full ${
-                    isCredit ? 'bg-green-100 dark:bg-green-900' : 'bg-red-100 dark:bg-red-900'
-                    }`}
+                    className={`flex items-center justify-center h-10 w-10 rounded-full bg-muted`}
                 >
                     {isCredit ? (
-                    <ArrowUpRight className="h-5 w-5 text-green-600 dark:text-green-400" />
+                    <ArrowUpRight className="h-5 w-5" />
                     ) : (
-                    <ArrowDownLeft className="h-5 w-5 text-red-600 dark:text-red-400" />
+                    <ArrowDownLeft className="h-5 w-5" />
                     )}
                 </div>
                 <div>
@@ -73,9 +71,7 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                 </div>
                 </div>
                 <p
-                className={`text-xl font-bold ${
-                    isCredit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
-                }`}
+                className={`text-xl font-bold`}
                 >
                 {formatCurrency(transaction.amount)}
                 </p>
