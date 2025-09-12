@@ -109,8 +109,8 @@ function CompanyTransactionsContent() {
                                                 {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                             </div>
                                             <div>
-                                                <p className="font-medium">{TRANSACTION_TYPES[tx.type]}</p>
-                                                <p className="text-sm text-muted-foreground">{formatDate(new Date(tx.timestamp))}</p>
+                                                <p className="font-medium">{tx.customerName || 'N/A'}</p>
+                                                <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]} &bull; {formatDate(new Date(tx.timestamp))}</p>
                                             </div>
                                         </div>
                                         <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
@@ -118,7 +118,6 @@ function CompanyTransactionsContent() {
                                         </p>
                                     </div>
                                     <div className='border-t p-4 space-y-2 text-sm'>
-                                        {tx.customerName && <div className='flex items-center gap-2'><User className="h-4 w-4 text-muted-foreground" /> <span>{tx.customerName}</span></div>}
                                         {tx.upiTransactionId && <div className='flex items-center gap-2'><Hash className="h-4 w-4 text-muted-foreground" /> <span>{tx.upiTransactionId}</span></div>}
                                     </div>
                                 </div>
