@@ -142,42 +142,49 @@ function CompanyTransactionsContent() {
             startY: 40,
             head: [
                 [
-                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-                    { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+                    { content: 'Cash', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'UPI', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
                 ],
-                ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
+                [
+                    { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
+                ]
             ],
             body: body,
             foot: [
                  [
-                    { content: 'Total Credit', colSpan: 8, styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fillColor: '#f2f2f2' } }
+                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
                 ],
                 [
-                    { content: 'Entry', styles: { fillColor: '#008080', textColor: '#000' } },
-                    { content: entryAmounts[0], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: entryAmounts[1], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: entryAmounts[2], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: entryAmounts[3], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: '', colSpan: 3, styles: { fillColor: '#008080' } },
-                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fillColor: '#ffe6e6' } }
+                    { content: 'Entry', styles: { fontStyle: 'bold' } },
+                    { content: entryAmounts[0], styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: entryAmounts[1], styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: entryAmounts[2], styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: entryAmounts[3], styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: '', colSpan: 4, styles: { fontStyle: 'bold' } },
+                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
                 ],
                 [
-                    { content: 'Closing Balance', colSpan: 8, styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
-                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fillColor: '#ffe6e6' } }
+                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
                 ]
             ],
             theme: 'grid',
             styles: {
                 font: 'helvetica',
-                fontStyle: 'bold',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
             },
             headStyles: {
-                fillColor: '#f2f2f2',
                 textColor: '#000000',
                 halign: 'center',
             },
@@ -186,13 +193,13 @@ function CompanyTransactionsContent() {
                 halign: 'right',
             },
             columnStyles: {
-                0: { halign: 'left', fillColor: '#f2f2f2' },
+                0: { halign: 'left' },
                 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
                 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
                 9: { halign: 'right' },
             },
             didParseCell: (data) => {
-                if (data.row.section === 'foot') {
+                if (data.row.section === 'foot' || data.row.section === 'head') {
                      data.cell.styles.fontStyle = 'bold';
                      data.cell.styles.valign = 'middle';
                 }
