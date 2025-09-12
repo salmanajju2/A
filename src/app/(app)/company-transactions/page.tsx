@@ -246,7 +246,7 @@ function CompanyTransactionsContent() {
                                                 {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                             </div>
                                             <div>
-                                                <p className="font-medium">{tx.companyName || 'N/A'}</p>
+                                                <p className="font-medium">{tx.customerName || tx.companyName || 'N/A'}</p>
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
@@ -317,7 +317,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
-
-    
