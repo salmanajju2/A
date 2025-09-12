@@ -93,7 +93,6 @@ function CompanyTransactionsContent() {
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
     
-        // Sort transactions by customer name for grouping
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
     
         sortedTransactions.forEach(tx => {
@@ -135,10 +134,9 @@ function CompanyTransactionsContent() {
             ],
              [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 3).map(amt => ({ content: formatCurrency(amt) })),
-                ...Array(Math.max(0, 3 - debitEntries.length)).fill(''),
-                 { content: '', colSpan: 4 }, // Empty cells for UPI
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold' }, colSpan: 2 },
+                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt) })), // Show up to 8 entries
+                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
+                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold' } },
              ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
@@ -149,10 +147,10 @@ function CompanyTransactionsContent() {
         (doc as any).autoTable({
             head: [
                 [
-                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle' } },
+                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
                     { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
                     { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle' } }
+                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } }
                 ],
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
@@ -161,15 +159,16 @@ function CompanyTransactionsContent() {
             startY: 35,
             theme: 'grid',
             headStyles: {
+                fillColor: '#ffffff',
                 textColor: blackColor,
                 fontStyle: 'bold'
             },
             styles: {
+                fillColor: '#ffffff',
                 textColor: blackColor,
-                fillColor: '#ffffff'
             },
             columnStyles: {
-                0: { fontStyle: 'bold' },
+                0: { fontStyle: 'bold' }, // Customer Name
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -178,7 +177,7 @@ function CompanyTransactionsContent() {
                 6: { halign: 'right' },
                 7: { halign: 'right' },
                 8: { halign: 'right' },
-                9: { halign: 'right', fontStyle: 'bold' }
+                9: { halign: 'right', fontStyle: 'bold' } // Total Credit
             },
             didParseCell: function(data: any) {
                 if (data.section === 'head') {
@@ -325,5 +324,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
