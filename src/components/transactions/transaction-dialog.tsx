@@ -34,10 +34,10 @@ interface TransactionDialogProps {
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
-  customerName: z.string().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
   scope: z.enum(['global', 'company']).optional(),
+  upiTransactionId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
@@ -47,16 +47,16 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   const { toast } = useToast();
   
   const isEditMode = !!transaction;
-  const currentTransactionType = transaction ? transaction.type : transactionType;
+  const currentTransactionType = transaction?.type || transactionType;
   
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      customerName: '',
       companyName: '',
       location: '',
       scope: 'global',
+      upiTransactionId: '',
       ...defaults
     },
   });
@@ -67,19 +67,19 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     control: form.control,
     name: "denominations",
   });
-
+  
   useEffect(() => {
     if (open) {
       const initialValues = {
         amount: 0,
-        customerName: defaults?.customerName || '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
         denominations: {},
         scope: defaults?.scope || 'global',
+        upiTransactionId: '',
         ...transaction
       };
-      form.reset(initialValues);
+      form.reset(initialValues as any);
     }
   }, [open, transaction, form, defaults]);
   
@@ -125,17 +125,13 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     }
   };
 
-  if (!open) {
-    return null;
-  }
-
-  if (!currentTransactionType) {
-    if (open) {
+  if (!open || !currentTransactionType) {
+    if (open && !currentTransactionType) {
       console.error("TransactionDialog: No transaction type provided.");
     }
     return null;
   }
-
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -167,10 +163,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     />
                 )}
                 
-                <FormField control={form.control} name="customerName" render={({ field }) => (
-                    <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                )}/>
-
                 <FormField
                   control={form.control}
                   name="companyName"
