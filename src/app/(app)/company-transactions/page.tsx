@@ -109,10 +109,12 @@ function CompanyTransactionsContent() {
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const rowData: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
-            rowData.push(data.total);
+            const rowData: any[] = [
+                { content: name, styles: { fillColor: '#f2f2f2' } }
+            ];
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? data.cash[i].toLocaleString('en-IN') : '', styles: { halign: 'right' } });
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? data.upi[i].toLocaleString('en-IN') : '', styles: { halign: 'right' } });
+            rowData.push({ content: data.total.toLocaleString('en-IN'), styles: { fontStyle: 'bold', halign: 'right' } });
             return rowData;
         });
     
@@ -121,26 +123,26 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
 
         const footer = [];
-        footer.push([
+        
+        const totalCreditRow: any[] = [
             { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' }},
-            { content: totalCredit, styles: { fontStyle: 'bold' } }
-        ]);
+            { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', halign: 'right' } }
+        ];
+        footer.push(totalCreditRow);
 
-        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
-        for (let i = 0; i < debitEntries.length && i < 8; i++) {
-            entryRow.push(debitEntries[i]);
+        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#f2f2f2' } }];
+        for (let i = 0; i < 8; i++) {
+            entryRow.push({content: debitEntries[i] ? debitEntries[i].toLocaleString('en-IN') : '', styles: {halign: 'right'}});
         }
-        for (let i = debitEntries.length; i < 8; i++) {
-            entryRow.push('');
-        }
-        entryRow.push({ content: totalDebit, styles: { fontStyle: 'bold' } });
+        entryRow.push({ content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', halign: 'right' } });
         footer.push(entryRow);
         
-        footer.push([
+        const closingBalanceRow: any[] = [
             { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: closingBalance, styles: { fontStyle: 'bold' } }
-        ]);
-
+            { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', halign: 'right' } }
+        ];
+        footer.push(closingBalanceRow);
+        
         (doc as any).autoTable({
             head: head,
             body: body,
@@ -152,21 +154,22 @@ function CompanyTransactionsContent() {
                 fontStyle: 'bold',
                 halign: 'center'
             },
+            footStyles: {
+                textColor: [0, 0, 0],
+            },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: '#f2f2f2' },
-                9: { fontStyle: 'bold', fillColor: '#f2f2f2' }
+                0: { fontStyle: 'bold' },
+                9: { fillColor: '#f2f2f2' }
             },
             didParseCell: function(data: any) {
-                if ((data.section === 'body' || data.section === 'foot') && typeof data.cell.raw === 'number') {
-                    data.cell.text = ['₹' + data.cell.raw.toLocaleString('en-IN')];
-                    data.cell.styles.halign = 'right';
-                }
-                 // Align header text
-                if (data.section === 'head') {
+                 if (data.section === 'head') {
                     data.cell.styles.halign = 'center';
                 }
             }
         });
+
+        doc.setFontSize(10);
+        doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, (doc as any).autoTable.previous.finalY + 10);
     
         doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
     }
@@ -306,5 +309,7 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
