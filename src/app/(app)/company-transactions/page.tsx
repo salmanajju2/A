@@ -128,49 +128,45 @@ function CompanyTransactionsContent() {
         const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const formatValue = (value: any) => {
-             if (typeof value === 'number') {
-                return value.toLocaleString('en-IN');
-            }
-            return value;
-        }
-
         const footerRows = [
-            [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
-            ],
-            [
-                { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => formatValue(amt)),
-                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
-            ],
-            [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
-            ],
+             {
+                '1': { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                '2': { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
+            },
+            {
+                '1': { content: 'Entry', styles: { fontStyle: 'bold' } },
+                ...Object.fromEntries(debitEntries.slice(0, 8).map((amt, i) => [i + 2, { content: formatCurrency(amt, {symbol: ''}), styles: { halign: 'right' } }])),
+                '10': { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
+            },
+            {
+                '1': { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                '2': { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
+            }
         ];
-
-        body.push(...footerRows as any);
-
+        
         doc.autoTable({
             head: [
                 [
-                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-                    { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } }
+                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center', fontStyle: 'bold' } },
+                    { content: 'Cash', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'UPI', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle', halign: 'center', fontStyle: 'bold' } }
                 ],
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
             body: body,
+            foot: footerRows,
             startY: 35,
             theme: 'grid',
             headStyles: {
                 fillColor: greyColor,
                 textColor: blackColor,
                 fontStyle: 'bold',
+            },
+            footStyles: {
+                fillColor: false,
+                textColor: blackColor,
+                fontStyle: 'bold'
             },
             styles: {
                 textColor: blackColor,
@@ -188,18 +184,13 @@ function CompanyTransactionsContent() {
                 8: { halign: 'right' },
                 9: { halign: 'right', fontStyle: 'bold' },
             },
-            didParseCell: function(data: any) {
-                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey !== 9) {
-                     data.cell.text = [formatValue(data.cell.raw)];
+             didParseCell: function(data) {
+                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey !== 0) {
+                     data.cell.text = [formatCurrency(data.cell.raw, { symbol: '' })];
                 }
-                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey === 9) {
+                 if (data.row.section === 'body' && data.column.dataKey === 9 && typeof data.cell.raw === 'number') {
                      data.cell.text = [formatCurrency(data.cell.raw)];
-                }
-                if (data.row.section === 'foot') {
-                    if (data.cell.raw && (data.cell.raw as any).content) {
-                        data.cell.text = [(data.cell.raw as any).content];
-                    }
-                }
+                 }
             },
         });
     
@@ -236,7 +227,7 @@ function CompanyTransactionsContent() {
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
-                            <span className={cn("font-bold", summary.net >= 0 ? '' : 'text-red-500')}>{formatCurrency(summary.net)}</span>
+                            <span className={cn("font-bold", summary.net >= 0 ? 'text-green-500' : 'text-red-500')}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
@@ -276,7 +267,7 @@ function CompanyTransactionsContent() {
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? '' : 'text-red-500')}>
+                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-500' : 'text-red-500')}>
                                             {formatCurrency(tx.amount)}
                                         </p>
                                     </div>
