@@ -37,7 +37,7 @@ function CompanyTransactionsContent() {
     }
 
     const handleEdit = (transaction: Transaction) => {
-        setTransactionType(null);
+        setTransactionType(transaction.type);
         setEditingTransaction(transaction);
         setDialogOpen(true);
     };
@@ -241,5 +241,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
