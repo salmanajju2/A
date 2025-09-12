@@ -127,12 +127,8 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
     }
   };
-
+  
   if (!open || !currentTransactionType) {
-    if (open && !currentTransactionType) {
-      // This is now safe to do, because we check `open` first.
-      console.error("TransactionDialog: No transaction type provided.");
-    }
     return null;
   }
   
@@ -167,6 +163,20 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     />
                 )}
                 
+                 <FormField
+                  control={form.control}
+                  name="customerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Customer Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter customer's name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="companyName"

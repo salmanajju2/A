@@ -36,7 +36,6 @@ function CompanyTransactionsContent() {
         return transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
-            // Show both company-scoped and global transactions that match company/location
             return companyMatch && locationMatch;
         }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [transactions, company, location]);
@@ -61,7 +60,7 @@ function CompanyTransactionsContent() {
 
     const handleEdit = (transaction: Transaction) => {
         setEditingTransaction(transaction);
-        // The type is already on the transaction, so we don't need to set it separately.
+        setTransactionType(transaction.type);
         setDialogOpen(true);
     };
 
@@ -73,34 +72,37 @@ function CompanyTransactionsContent() {
     
     const handleDownloadPdf = () => {
         const doc = new jsPDF({ orientation: 'landscape' });
-        const pageTitle = `Report for ${company} ${location || ''}`.trim();
         const generationDate = new Date();
-    
+        const pageTitle = `Report for ${company} ${location || ''}`.trim();
+        const reportDate = generationDate.toLocaleDateString('en-IN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
         // 1. Set up headers
         doc.setFontSize(10);
         doc.text(`${generationDate.toLocaleDateString()}, ${generationDate.toLocaleTimeString()}`, 14, 15);
-        doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
-    
         doc.setFontSize(22);
-        doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-    
+        doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
         doc.setFontSize(10);
         doc.text(`Generated on: ${generationDate.toLocaleString()}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
-    
     
         // 2. Process data
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
+
+        const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+            const nameA = a.customerName || a.companyName || 'z';
+            const nameB = b.customerName || b.companyName || 'z';
+            return nameA.localeCompare(nameB);
+        });
     
-        filteredTransactions.forEach(tx => {
+        sortedTransactions.forEach(tx => {
+            const customer = tx.customerName || tx.companyName || 'N/A';
             if (tx.type.includes('CREDIT')) {
-                const customer = tx.companyName || 'N/A';
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
-                if (tx.type.includes('CASH')) {
+                if (tx.type === 'CASH_CREDIT') {
                     customerCredits[customer].cash.push(tx.amount);
-                } else if (tx.type.includes('UPI')) {
+                } else if (tx.type === 'UPI_CREDIT') {
                     customerCredits[customer].upi.push(tx.amount);
                 }
                 customerCredits[customer].total += tx.amount;
@@ -120,35 +122,51 @@ function CompanyTransactionsContent() {
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            return [
-                name,
-                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? data.cash[i].toFixed(2) : ''),
-                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? data.upi[i].toFixed(2) : ''),
-                { content: data.total.toFixed(2), styles: { halign: 'right' } }
-            ];
+            const row: (string | number)[] = [name];
+            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? `₹${data.cash[i].toLocaleString('en-IN')}`: '');
+            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? `₹${data.upi[i].toLocaleString('en-IN')}`: '');
+            row.push(`₹${data.total.toLocaleString('en-IN')}`);
+            return row;
         });
-    
+
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebit = debitEntries.cash.reduce((s, a) => s + a, 0) + debitEntries.upi.reduce((s, a) => s + a, 0);
+        const totalDebitCash = debitEntries.cash.reduce((s, a) => s + a, 0);
+        const totalDebitUpi = debitEntries.upi.reduce((s, a) => s + a, 0);
+        const totalDebit = totalDebitCash + totalDebitUpi;
         const closingBalance = totalCredit - totalDebit;
-    
+
         const footer = [
-            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: totalCredit.toFixed(2), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
-            [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? debitEntries.cash[i].toFixed(2) : ''),
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? debitEntries.upi[i].toFixed(2) : ''),
-                { content: 'Total Debit', styles: { fontStyle: 'bold', halign: 'right' } },
-                { content: totalDebit.toFixed(2), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
-            ],
-            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: closingBalance.toFixed(2), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
+            { content: '', colSpan: 9 },
+            { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: `₹${totalCredit.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#dff0d8' } },
         ];
-    
-        body.push(...footer as any);
-    
+
+        const entryRow: (string | number)[] = ['Entry'];
+        const allDebitEntries = [...debitEntries.cash, ...debitEntries.upi];
+        for (let i = 0; i < 8; i++) {
+             entryRow.push(allDebitEntries[i] ? `₹${allDebitEntries[i].toLocaleString('en-IN')}`: '');
+        }
+        
+        const footerWithEntry = [
+            ...body,
+            footer,
+            [
+                'Entry',
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? `₹${debitEntries.cash[i].toLocaleString('en-IN')}` : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? `₹${debitEntries.upi[i].toLocaleString('en-IN')}` : ''),
+                { content: `₹${totalDebit.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#f2dede' } }
+            ],
+             [
+                { content: '', colSpan: 9 },
+                { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: `₹${closingBalance.toLocaleString('en-IN')}`, styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } },
+            ]
+        ];
+
         // 4. Generate table
         (doc as any).autoTable({
             head: head,
-            body: body,
+            body: footerWithEntry,
             startY: 45,
             theme: 'grid',
             headStyles: {
@@ -166,20 +184,20 @@ function CompanyTransactionsContent() {
                 10: { halign: 'right' }
             },
             didParseCell: function(data: any) {
-                if (data.section === 'body' && data.column.index >= 1 && data.column.index < 9) {
+                if (data.section === 'body' && data.column.index > 0 && data.column.index <= 10) {
                     data.cell.styles.halign = 'right';
                 }
             }
         });
 
         const finalY = (doc as any).lastAutoTable.finalY;
-
         doc.setFontSize(10);
         doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, finalY + 10);
     
         // 5. Save PDF
         doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
     }
+
 
     if (!company) {
         return (
@@ -292,19 +310,17 @@ function CompanyTransactionsContent() {
                 </CardContent>
             </Card>
 
-            {dialogOpen && (
-                <TransactionDialog
-                    open={dialogOpen}
-                    onOpenChange={setDialogOpen}
-                    transactionType={editingTransaction ? null : transactionType}
-                    transaction={editingTransaction}
-                    defaults={{
-                        companyName: company || undefined,
-                        location: location || undefined,
-                        scope: 'company'
-                    }}
-                />
-            )}
+            <TransactionDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                transactionType={transactionType}
+                transaction={editingTransaction}
+                defaults={{
+                    companyName: company || undefined,
+                    location: location || undefined,
+                    scope: 'company'
+                }}
+            />
         </div>
     );
 }
