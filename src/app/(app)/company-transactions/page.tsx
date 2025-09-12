@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash, FileDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -27,6 +27,11 @@ function CompanyTransactionsContent() {
     const handleOpenDialog = (type: TransactionType) => {
         setTransactionType(type);
         setDialogOpen(true);
+    }
+    
+    const handleDownloadPdf = () => {
+        // TODO: Implement PDF download logic
+        alert('PDF download functionality coming soon!');
     }
 
     const filteredTransactions = useMemo(() => {
@@ -75,6 +80,10 @@ function CompanyTransactionsContent() {
                     <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                          <PlusCircle className="mr-2 h-4 w-4" />
                         Add Entry
+                    </Button>
+                    <Button variant="secondary" onClick={handleDownloadPdf}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        PDF
                     </Button>
                     <Button onClick={() => router.back()}>Go Back</Button>
                  </div>
