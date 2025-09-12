@@ -19,6 +19,11 @@ import { useToast } from '@/hooks/use-toast';
 import { numberToWords } from '@/lib/number-to-words';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
+// Extend jsPDF with autoTable
+interface jsPDFWithAutoTable extends jsPDF {
+    autoTable: (options: any) => jsPDF;
+}
+
 function CompanyTransactionsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -69,13 +74,13 @@ function CompanyTransactionsContent() {
     };
     
     const handleDownloadPdf = () => {
-        const doc = new jsPDF({ orientation: 'landscape' });
+        const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
         const generationDate = new Date();
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
         const blackColor = '#000000';
-    
+        const lightGreyColor = '#f2f2f2';
+
         // Main Title
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
@@ -88,11 +93,11 @@ function CompanyTransactionsContent() {
         doc.setTextColor(blackColor);
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
-    
         // --- Data Processing ---
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
     
+        // Sort by customer name to group them
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
     
         sortedTransactions.forEach(tx => {
@@ -114,37 +119,42 @@ function CompanyTransactionsContent() {
     
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const rowData: any[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i], { symbol: '' }) : '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i], { symbol: '' }) : '');
-            rowData.push({ content: formatCurrency(data.total, { symbol: '' }), styles: { fontStyle: 'bold' } });
-            return rowData;
+            const row: (string | { content: string; styles: any })[] = [name];
+            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? data.cash[i].toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '');
+            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? data.upi[i].toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}) : '');
+            row.push({ content: data.total.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), styles: { fontStyle: 'bold' } });
+            return row;
         });
-    
-    
-        // --- Table Footer Calculations ---
+
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
-    
-        const footer = [
+
+        const formatFooterAmount = (amount: number) => {
+            return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        }
+
+        // --- Footer Rows ---
+        const footerRows = [
             [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold' } }
+                { content: 'Total Credit', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(totalCredit), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } }
             ],
-             [
-                { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt) })), // Show up to 8 entries
-                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold' } },
-             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold' } }
+                { content: 'Entry', styles: { fontStyle: 'bold' } },
+                ...debitEntries.slice(0, 8).map(amt => ({ content: amt.toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2}), styles: { halign: 'right'} })),
+                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
+                { content: formatFooterAmount(totalDebit), colSpan: 1, styles: { halign: 'right', fontStyle: 'bold' } },
+            ],
+            [
+                { content: 'Closing Balance', colSpan: 8, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(closingBalance), colSpan: 2, styles: { halign: 'right', fontStyle: 'bold' } }
             ],
         ];
-    
-        (doc as any).autoTable({
+        
+        body.push(...footerRows as any);
+
+        doc.autoTable({
             head: [
                 [
                     { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
@@ -155,20 +165,20 @@ function CompanyTransactionsContent() {
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
             body: body,
-            foot: footer,
             startY: 35,
             theme: 'grid',
             headStyles: {
-                fillColor: '#ffffff',
+                fillColor: lightGreyColor,
                 textColor: blackColor,
-                fontStyle: 'bold'
+                fontStyle: 'bold',
+                halign: 'center',
             },
             styles: {
-                fillColor: '#ffffff',
                 textColor: blackColor,
+                lineColor: [200, 200, 200], // Light grey for grid lines
             },
             columnStyles: {
-                0: { fontStyle: 'bold' }, // Customer Name
+                0: { fontStyle: 'bold', fillColor: lightGreyColor, halign: 'left' },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -177,12 +187,10 @@ function CompanyTransactionsContent() {
                 6: { halign: 'right' },
                 7: { halign: 'right' },
                 8: { halign: 'right' },
-                9: { halign: 'right', fontStyle: 'bold' } // Total Credit
+                9: { halign: 'right', fontStyle: 'bold' },
             },
-            didParseCell: function(data: any) {
-                if (data.section === 'head') {
-                    data.cell.styles.halign = 'center';
-                }
+            didDrawPage: function(data) {
+                // Remove footer to avoid default page numbering
             }
         });
     
