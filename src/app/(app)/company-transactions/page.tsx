@@ -115,15 +115,15 @@ function CompanyTransactionsContent() {
             const total = [...data.cash, ...data.upi].reduce((sum: number, val) => sum + (Number(val) || 0), 0);
             return [
                 name,
-                data.cash[0] ? formatCurrency(data.cash[0] as number) : '',
-                data.cash[1] ? formatCurrency(data.cash[1] as number) : '',
-                data.cash[2] ? formatCurrency(data.cash[2] as number) : '',
-                data.cash[3] ? formatCurrency(data.cash[3] as number) : '',
-                data.upi[0] ? formatCurrency(data.upi[0] as number) : '',
-                data.upi[1] ? formatCurrency(data.upi[1] as number) : '',
-                data.upi[2] ? formatCurrency(data.upi[2] as number) : '',
-                data.upi[3] ? formatCurrency(data.upi[3] as number) : '',
-                formatCurrency(total)
+                data.cash[0] ? formatCurrency(data.cash[0] as number, { symbol: '' }) : '',
+                data.cash[1] ? formatCurrency(data.cash[1] as number, { symbol: '' }) : '',
+                data.cash[2] ? formatCurrency(data.cash[2] as number, { symbol: '' }) : '',
+                data.cash[3] ? formatCurrency(data.cash[3] as number, { symbol: '' }) : '',
+                data.upi[0] ? formatCurrency(data.upi[0] as number, { symbol: '' }) : '',
+                data.upi[1] ? formatCurrency(data.upi[1] as number, { symbol: '' }) : '',
+                data.upi[2] ? formatCurrency(data.upi[2] as number, { symbol: '' }) : '',
+                data.upi[3] ? formatCurrency(data.upi[3] as number, { symbol: '' }) : '',
+                formatCurrency(total, { symbol: '' })
             ];
         });
 
@@ -139,38 +139,38 @@ function CompanyTransactionsContent() {
 
         const head = [
             [
-                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } },
-                { content: 'Cash', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: 'UPI', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } }
+                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
+                { content: 'Cash', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: 'UPI', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } }
             ],
             [
-                { content: '1st', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '2nd', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '3rd', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '4th', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '1st', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '2nd', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '3rd', styles: { halign: 'center', fillColor: '#f2f2f2' } },
-                { content: '4th', styles: { halign: 'center', fillColor: '#f2f2f2' } }
+                { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
+                { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } }
             ]
         ];
 
         const foot = [
-            [
+             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8' } }
+                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                { content: debitEntries[0] ? formatCurrency(debitEntries[0]) : '', styles: { fontStyle: 'bold' } },
-                { content: debitEntries[1] ? formatCurrency(debitEntries[1]) : '', styles: { fontStyle: 'bold' } },
+                { content: debitEntries[0] ? formatCurrency(debitEntries[0], { symbol: '' }) : '', styles: { fontStyle: 'bold', halign: 'right' } },
+                { content: debitEntries[1] ? formatCurrency(debitEntries[1], { symbol: '' }) : '', styles: { fontStyle: 'bold', halign: 'right' } },
                 '', '', '', '', '', '',
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede' } }
+                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: '#dff0d8' } }
+                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
             ]
         ];
 
@@ -182,33 +182,34 @@ function CompanyTransactionsContent() {
             theme: 'grid',
             styles: {
                 font: 'helvetica',
+                fontStyle: 'bold',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
                 textColor: [0, 0, 0],
             },
             headStyles: {
-                fontStyle: 'bold',
                 halign: 'center',
-                valign: 'middle'
+                valign: 'middle',
+                fontStyle: 'bold',
             },
             footStyles: {
                 fontStyle: 'bold',
-                halign: 'right',
-                textColor: [0,0,0]
+                textColor: [0,0,0],
             },
             columnStyles: {
-                0: { halign: 'left', fontStyle: 'bold' },
+                0: { halign: 'left' },
                 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
                 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
-                9: { halign: 'right', fontStyle: 'bold' },
+                9: { halign: 'right' },
             },
             didParseCell: (data) => {
-                 if(data.section === 'body') {
-                    if (data.column.index > 0) {
-                        data.cell.styles.fontStyle = 'normal';
-                    }
+                 if (data.section === 'body') {
+                    data.cell.styles.fontStyle = 'normal';
                  }
-                 if(data.section === 'foot' && data.column.index > 0) {
+                 if(data.section === 'foot' && data.row.index === 0 && data.column.index === 0) {
+                    data.cell.styles.halign = 'right';
+                 }
+                 if(data.section === 'foot' && data.row.index === 2 && data.column.index === 0) {
                     data.cell.styles.halign = 'right';
                  }
             }
