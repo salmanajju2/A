@@ -40,6 +40,18 @@ function CompanyTransactionsContent() {
         }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [transactions, company, location]);
 
+    const summary = useMemo(() => {
+        return filteredTransactions.reduce((acc, tx) => {
+            if (tx.type.includes('CREDIT')) {
+                acc.credit += tx.amount;
+            } else {
+                acc.debit += tx.amount;
+            }
+            acc.net = acc.credit - acc.debit;
+            return acc;
+        }, { credit: 0, debit: 0, net: 0 });
+    }, [filteredTransactions]);
+
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
         setTransactionType(type);
@@ -48,7 +60,7 @@ function CompanyTransactionsContent() {
 
     const handleEdit = (transaction: Transaction) => {
         setEditingTransaction(transaction);
-        setTransactionType(transaction.type);
+        // The type is already on the transaction, so we don't need to set it separately.
         setDialogOpen(true);
     };
 
@@ -66,7 +78,7 @@ function CompanyTransactionsContent() {
         // 1. Set up headers
         doc.setFontSize(10);
         doc.text(`${generationDate.toLocaleDateString()}, ${generationDate.toLocaleTimeString()}`, 14, 15);
-        doc.text(`${pageTitle} - ${generationDate.toLocaleDateString()}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
     
         doc.setFontSize(22);
         doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
@@ -80,8 +92,8 @@ function CompanyTransactionsContent() {
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
     
         filteredTransactions.forEach(tx => {
-            const customer = tx.customerName || 'N/A';
             if (tx.type.includes('CREDIT')) {
+                const customer = tx.customerName || 'N/A';
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
@@ -109,9 +121,9 @@ function CompanyTransactionsContent() {
         const body = Object.entries(customerCredits).map(([name, data]) => {
             return [
                 name,
-                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? formatCurrency(data.cash[i]).replace('₹','').trim() : ''),
-                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? formatCurrency(data.upi[i]).replace('₹','').trim() : ''),
-                { content: formatCurrency(data.total).replace('₹','').trim(), styles: { halign: 'right' } }
+                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? data.cash[i].toFixed(2) : ''),
+                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? data.upi[i].toFixed(2) : ''),
+                { content: data.total.toFixed(2), styles: { halign: 'right' } }
             ];
         });
     
@@ -120,14 +132,14 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
     
         const footer = [
-            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: totalCredit.toFixed(2), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
             [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]).replace('₹','').trim() : ''),
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]).replace('₹','').trim() : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? debitEntries.cash[i].toFixed(2) : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? debitEntries.upi[i].toFixed(2) : ''),
                 { content: 'Total Debit', styles: { fontStyle: 'bold', halign: 'right' } },
-                { content: formatCurrency(totalDebit).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
+                { content: totalDebit.toFixed(2), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
             ],
-            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: closingBalance.toFixed(2), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
         ];
     
         body.push(...footer as any);
@@ -168,18 +180,6 @@ function CompanyTransactionsContent() {
         doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
     }
 
-    const summary = useMemo(() => {
-        return filteredTransactions.reduce((acc, tx) => {
-            if (tx.type.includes('CREDIT')) {
-                acc.credit += tx.amount;
-            } else {
-                acc.debit += tx.amount;
-            }
-            acc.net = acc.credit - acc.debit;
-            return acc;
-        }, { credit: 0, debit: 0, net: 0 });
-    }, [filteredTransactions]);
-
     if (!company) {
         return (
             <div className="text-center">
@@ -197,26 +197,7 @@ function CompanyTransactionsContent() {
                 title={pageTitle}
                 description={`A summary of ${filteredTransactions.length} transactions.`}
             >
-                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        add upi kro
-                    </Button>
-                    <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
-                         <PlusCircle className="mr-2 h-4 w-4" />
-                        Add Entry
-                    </Button>
-                    <Button variant="secondary" onClick={handleDownloadPdf}>
-                        <FileDown className="mr-2 h-4 w-4" />
-                        PDF
-                    </Button>
-                    <Button onClick={() => router.back()}>Go Back</Button>
-                 </div>
-            </PageHeader>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Balance Summary</CardTitle>
+                <div className='flex flex-col gap-4 items-end'>
                     <div className="flex gap-8 text-sm pt-2">
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Credit:</span>
@@ -231,6 +212,27 @@ function CompanyTransactionsContent() {
                             <span className={cn("font-bold", summary.net < 0 ? "text-red-600" : "text-primary")}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
+                     <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            add upi kro
+                        </Button>
+                        <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
+                             <PlusCircle className="mr-2 h-4 w-4" />
+                            Add Entry
+                        </Button>
+                        <Button variant="secondary" onClick={handleDownloadPdf}>
+                            <FileDown className="mr-2 h-4 w-4" />
+                            PDF
+                        </Button>
+                        <Button onClick={() => router.back()}>Go Back</Button>
+                     </div>
+                </div>
+            </PageHeader>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Transaction History</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
@@ -285,7 +287,7 @@ function CompanyTransactionsContent() {
                 <TransactionDialog
                     open={dialogOpen}
                     onOpenChange={setDialogOpen}
-                    transactionType={transactionType}
+                    transactionType={editingTransaction ? null : transactionType}
                     transaction={editingTransaction}
                     defaults={{
                         companyName: company,
@@ -306,3 +308,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
