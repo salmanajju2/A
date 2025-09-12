@@ -26,7 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transactionType?: TransactionType;
+  transactionType?: TransactionType | null;
   transaction?: Transaction | null;
   defaults?: Partial<Transaction>;
 }
@@ -37,7 +37,6 @@ const formSchema = z.object({
   customerName: z.string().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
-  upiTransactionId: z.string().optional(),
   scope: z.enum(['global', 'company']).optional(),
 });
 
@@ -48,14 +47,8 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   const { toast } = useToast();
   
   const isEditMode = !!transaction;
-  const currentTransactionType = transaction?.type || transactionType;
+  const currentTransactionType = isEditMode ? transaction.type : transactionType;
   
-  if (!currentTransactionType) {
-    // This should not happen if the dialog is opened correctly
-    console.error("TransactionDialog: No transaction type provided.");
-    return null;
-  }
-
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -63,36 +56,39 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
       customerName: '',
       companyName: '',
       location: '',
-      upiTransactionId: '',
       scope: 'global',
       ...defaults
     },
   });
 
   useEffect(() => {
-    if (transaction) {
+    if (open && transaction) {
       form.reset({
         amount: transaction.amount,
         customerName: transaction.customerName,
         companyName: transaction.companyName,
         location: transaction.location,
-        upiTransactionId: transaction.upiTransactionId,
         denominations: transaction.denominations,
         scope: transaction.scope || 'global',
       });
-    } else {
+    } else if (open) {
       form.reset({
         amount: 0,
         customerName: '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
-        upiTransactionId: '',
         denominations: {},
         scope: defaults?.scope || 'global',
       });
     }
-  }, [transaction, form, defaults]);
+  }, [open, transaction, form, defaults]);
 
+  if (!currentTransactionType) {
+    if (open) {
+      console.error("TransactionDialog: No transaction type provided.");
+    }
+    return null;
+  }
 
   const isCashTransaction = currentTransactionType.includes('CASH');
 
