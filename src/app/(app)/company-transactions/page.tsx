@@ -93,7 +93,7 @@ function CompanyTransactionsContent() {
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
         doc.text(generatedDate, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
-
+        
         const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[] } } = {};
 
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
@@ -101,7 +101,8 @@ function CompanyTransactionsContent() {
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    customerCredits[tx.customerName] = { cash: ['', '', '', ''], upi: ['', '', '', ''] };
+                    // 3 slots for cash, 3 for upi
+                    customerCredits[tx.customerName] = { cash: ['', '', ''], upi: ['', '', ''] };
                 }
                 const customer = customerCredits[tx.customerName];
                 const slots = tx.type === 'CASH_CREDIT' ? customer.cash : customer.upi;
@@ -111,105 +112,122 @@ function CompanyTransactionsContent() {
                 }
             }
         });
+        
+        const body = Object.entries(customerCredits).flatMap(([name, data]) => {
+            const allCash = data.cash.filter(c => c !== '');
+            const allUpi = data.upi.filter(c => c !== '');
+            const maxRows = Math.max(1, allCash.length, allUpi.length);
+            const rows: (string|number)[][] = [];
 
-        const body = Object.entries(customerCredits).map(([name, data]) => {
-            const total = [...data.cash, ...data.upi].reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
-            return [
-                name,
-                ...data.cash,
-                ...data.upi,
-                total
-            ].map(val => (typeof val === 'number' && val !== 0) ? formatCurrency(val, { symbol: '' }) : val === 0 ? '' : val);
+            for (let i = 0; i < maxRows; i++) {
+                const rowName = i === 0 ? name : '';
+                const cash1 = allCash[i] || '';
+                const total = allCash.concat(allUpi).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+                 rows.push([
+                    rowName,
+                    cash1,
+                    data.cash[1] || '',
+                    data.cash[2] || '',
+                    data.upi[0] || '',
+                    data.upi[1] || '',
+                    data.upi[2] || '',
+                    i === 0 ? total : ''
+                ]);
+            }
+            // Handle case where a customer might have more than one transaction type, this combines them under one name.
+            // Simplified: just taking the first one for now
+            if(rows.length > 1){
+                 const combinedRow = rows.reduce((acc, row, index) => {
+                    if (index === 0) return row;
+                    for(let j=1; j< row.length; j++){
+                        if(row[j] !== '') acc[j] = row[j];
+                    }
+                    return acc;
+                }, [...rows[0]]);
+                const total = allCash.concat(allUpi).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+                combinedRow[7] = total;
+                return [combinedRow.map(c => c === 0 ? '' : c)];
+
+            }
+
+            return rows;
         });
 
         const totalCredit = body.reduce((sum, row) => {
-            const totalString = (row[row.length - 1] as string).replace(/,/g, '');
-            return sum + (parseFloat(totalString) || 0);
+            return sum + (Number(row[7]) || 0);
         }, 0);
 
         const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
-        const entryAmounts = ['', '', '', ''];
-        entryTransactions.forEach((tx, index) => {
-            if (index < 4) {
-                 entryAmounts[index] = formatCurrency(tx.amount, { symbol: '' });
-            }
-        });
         const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
 
         const closingBalance = totalCredit - totalDebit;
 
+        const head = [
+            ['NAME', 'CASH 1ST', 'CASH 2ND', 'CASH 3RD', 'UPI 1ST', 'UPI 2ND', 'UPI 3RD', 'TOTAL']
+        ];
+
+        const foot = [
+            [
+                { content: 'TOTAL', styles: { fontStyle: 'bold' } },
+                '', '', '', '', '', '',
+                { content: totalCredit, styles: { fontStyle: 'bold', textColor: [0, 128, 0] } } // Green
+            ],
+            [
+                { content: 'ENTRY', styles: { fontStyle: 'bold' } },
+                { content: totalDebit, styles: { fontStyle: 'bold', textColor: [255, 0, 0] } }, // Red
+                '', '', '', '', '',
+                { content: totalDebit, styles: { fontStyle: 'bold', textColor: [255, 0, 0] } } // Red
+            ],
+            [
+                { content: 'BALANCE', styles: { fontStyle: 'bold' } },
+                '', '', '', '', '', '',
+                { content: closingBalance, styles: { fontStyle: 'bold', textColor: closingBalance < 0 ? [255, 0, 0] : [0,0,0] } } // Red for negative
+            ]
+        ];
+
+
         autoTable(doc, {
             startY: 40,
-            head: [
-                [
-                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-                    { content: 'Cash', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: 'UPI', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-                ],
-                [
-                    { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
-                    { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
-                ]
-            ],
+            head: head,
             body: body,
-            foot: [
-                 [
-                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
-                ],
-                [
-                    { content: 'Entry', styles: { fontStyle: 'bold' } },
-                    { content: entryAmounts[0], styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: entryAmounts[1], styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: entryAmounts[2], styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: entryAmounts[3], styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: '', colSpan: 4, styles: { fontStyle: 'bold' } },
-                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
-                ],
-                [
-                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
-                ]
-            ],
+            foot: foot,
             theme: 'grid',
             styles: {
                 font: 'helvetica',
+                fontStyle: 'bold',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
+                textColor: [0, 0, 0],
             },
             headStyles: {
-                textColor: '#000000',
-                halign: 'center',
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                halign: 'center'
             },
             footStyles: {
                 fontStyle: 'bold',
                 halign: 'right',
             },
             columnStyles: {
-                0: { halign: 'left', fontStyle: 'bold' },
-                1: { halign: 'right', fontStyle: 'bold' }, 2: { halign: 'right', fontStyle: 'bold' }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' },
-                5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right', fontStyle: 'bold' }, 7: { halign: 'right', fontStyle: 'bold' }, 8: { halign: 'right', fontStyle: 'bold' },
-                9: { halign: 'right', fontStyle: 'bold' },
+                0: { halign: 'left' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right' }
             },
             didParseCell: (data) => {
-                if (data.row.section === 'head') {
-                     data.cell.styles.fontStyle = 'bold';
-                     data.cell.styles.valign = 'middle';
-                }
-                 if (data.row.section === 'body') {
-                     data.cell.styles.fontStyle = 'bold';
+                 data.cell.styles.fontStyle = 'bold';
+                 if (data.row.section === 'head' && data.cell.raw) {
+                     data.cell.styles.halign = 'center';
                  }
-                if (data.row.section === 'foot') {
-                     data.cell.styles.fontStyle = 'bold';
-                     data.cell.styles.valign = 'middle';
-                }
+                 if(data.section === 'foot') {
+                    if (data.column.index > 0) {
+                        data.cell.styles.halign = 'right';
+                    }
+                 }
             }
         });
     
