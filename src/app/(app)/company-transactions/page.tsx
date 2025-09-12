@@ -126,19 +126,19 @@ function CompanyTransactionsContent() {
     
         const footer = [
             [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit) }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
+                { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } }
             ],
              [
-                { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 3).map(amt => formatCurrency(amt)),
+                { content: 'Entry', styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
+                ...debitEntries.slice(0, 3).map(amt => ({ content: formatCurrency(amt), styles: { fillColor: [255, 255, 255], textColor: [0, 0, 0] } })),
                 ...Array(Math.max(0, 3 - debitEntries.length)).fill(''),
-                '', '', '', '',
-                { content: formatCurrency(totalDebit), colSpan: 2 },
+                 { content: '', colSpan: 4 }, // Empty cells for UPI
+                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] }, colSpan: 2 },
              ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance) }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
+                { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } }
             ],
         ];
     
