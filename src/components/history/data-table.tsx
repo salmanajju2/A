@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   ColumnDef,
   flexRender,
@@ -12,6 +12,8 @@ import {
   SortingState,
   ColumnFiltersState,
   VisibilityState,
+  getExpandedRowModel,
+  ExpandedState,
 } from '@tanstack/react-table';
 
 import {
@@ -24,6 +26,9 @@ import {
 } from '@/components/ui/table';
 import { DataTableToolbar } from './data-table-toolbar';
 import { DataTablePagination } from './data-table-pagination';
+import { DenominationBreakdown } from './denomination-breakdown';
+import type { Transaction } from '@/lib/types';
+
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];
@@ -38,6 +43,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
@@ -50,11 +56,15 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onExpandedChange: setExpanded,
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand: (row) => (row.original as Transaction).type.includes('CASH'),
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      expanded,
     },
   });
 
@@ -84,19 +94,29 @@ export function DataTable<TData, TValue>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && 'selected'}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
-                    </TableCell>
-                  ))}
-                </TableRow>
+                <Fragment key={row.id}>
+                  <TableRow data-state={row.getIsSelected() && 'selected'}>
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                  {row.getIsExpanded() && (
+                    <TableRow>
+                      <TableCell colSpan={columns.length}>
+                        <DenominationBreakdown
+                          denominations={
+                            (row.original as Transaction).denominations
+                          }
+                        />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </Fragment>
               ))
             ) : (
               <TableRow>

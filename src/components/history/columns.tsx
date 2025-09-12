@@ -7,8 +7,30 @@ import { DataTableColumnHeader } from './data-table-column-header';
 import { formatCurrency, formatDate } from '@/lib/helpers';
 import { Badge } from '../ui/badge';
 import { TRANSACTION_TYPES } from '@/lib/constants';
+import { DenominationBreakdown } from './denomination-breakdown';
+import { Button } from '../ui/button';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 export const columns: ColumnDef<Transaction>[] = [
+  {
+    id: 'expander',
+    header: () => null,
+    cell: ({ row }) => {
+      const isCash = row.original.type.includes('CASH');
+      return (
+        isCash && row.getCanExpand() && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={row.getToggleExpandedHandler()}
+            className="h-8 w-8"
+          >
+            {row.getIsExpanded() ? <ChevronDown /> : <ChevronRight />}
+          </Button>
+        )
+      );
+    },
+  },
   {
     id: 'select',
     header: ({ table }) => (
