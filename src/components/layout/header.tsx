@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, History, Landmark, Menu } from 'lucide-react';
+import { LayoutDashboard, History, Landmark, Menu, Building } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -25,6 +25,7 @@ const menuItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/history', label: 'History', icon: History },
   { href: '/vault', label: 'Vault', icon: Landmark },
+  { href: '/company-summary', label: 'Company Summary', icon: Building },
 ];
 
 export function Header() {
