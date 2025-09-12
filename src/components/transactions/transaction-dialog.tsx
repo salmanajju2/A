@@ -173,10 +173,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     />
                 )}
                 
-                {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
-                    <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
-                )}/>}
-
                 <FormField control={form.control} name="customerName" render={({ field }) => (
                     <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                 )}/>
