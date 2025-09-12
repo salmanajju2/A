@@ -113,7 +113,7 @@ function CompanyTransactionsContent() {
             const rowData: (string | number)[] = [name];
             for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
             for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
-            rowData.push(formatCurrency(data.total, { symbol: '' }));
+            rowData.push(data.total);
             return rowData;
         });
 
@@ -122,20 +122,19 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
 
         const footerRows = [
-            [{ content: '', colSpan: 10, styles: { minCellHeight: 2 } }], // Spacer row
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
-                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
+                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
             ],
             [
-                { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => formatCurrency(amt, { symbol: '' })),
-                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#ffffff' } },
+                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: {fillColor: '#ffffff'} })),
+                ...Array(Math.max(0, 8 - debitEntries.length)).fill({ content: '', styles: {fillColor: '#ffffff'} }),
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffffff' } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } },
-                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
+                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
             ]
         ];
         
@@ -157,11 +156,10 @@ function CompanyTransactionsContent() {
                 textColor: '#000000',
                 lineColor: [0, 0, 0],
                 lineWidth: 0.1,
-                font: 'helvetica',
-                fontStyle: 'bold'
+                font: 'helvetica'
             },
             headStyles: {
-                fillColor: '#ffffff',
+                fillColor: '#f2f2f2',
                 textColor: '#000000',
                 fontStyle: 'bold',
             },
@@ -172,7 +170,7 @@ function CompanyTransactionsContent() {
                 fontStyle: 'bold'
             },
             columnStyles: {
-                0: { fontStyle: 'bold' },
+                0: { fontStyle: 'bold', cellWidth: 35 },
                 1: { halign: 'right', fontStyle: 'normal' },
                 2: { halign: 'right', fontStyle: 'normal' },
                 3: { halign: 'right', fontStyle: 'normal' },
@@ -184,25 +182,9 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right', fontStyle: 'bold' },
             },
              didParseCell: function (data) {
+                // For body cells, format numbers to currency
                 if (data.section === 'body' && typeof data.cell.raw === 'number') {
-                     data.cell.text = [formatCurrency(data.cell.raw, { symbol: '' })];
-                }
-                // Add currency symbol for specific body cells
-                if (data.section === 'body' && data.column.index > 0) {
-                    if (data.cell.raw !== '') {
-                        data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, ''))) ];
-                    }
-                }
-                 // Add currency symbol for footer
-                if (data.section === 'foot') {
-                    if ((data.row.index === 1 || data.row.index === 2 || data.row.index === 3) && data.column.index === 9) {
-                         data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, '')))];
-                    }
-                     if (data.row.index === 2 && data.column.index > 0 && data.column.index < 9) {
-                         if (data.cell.raw !== '') {
-                            data.cell.text = [formatCurrency(Number(String(data.cell.raw).replace(/,/g, '')))];
-                         }
-                    }
+                     data.cell.text = [formatCurrency(data.cell.raw)];
                 }
             },
         });
