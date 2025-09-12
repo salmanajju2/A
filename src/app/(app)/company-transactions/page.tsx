@@ -72,14 +72,12 @@ function CompanyTransactionsContent() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
     
-        const title = `${company} ${location || ''}`.trim();
-        doc.setFontSize(16);
+        const title = `Generated on: ${generationDate.toLocaleDateString('en-GB', { day:'numeric', month:'numeric', year:'numeric'})}, ${generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+        doc.setFontSize(12);
         doc.text(title, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
-        doc.setFontSize(10);
-        doc.text(`Date: ${generationDate.toLocaleDateString('en-IN')}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
 
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
-        const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
+        const debitEntries: number[] = [];
         
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
 
@@ -96,57 +94,58 @@ function CompanyTransactionsContent() {
                 }
                 customerCredits[customer].total += tx.amount;
             } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
-                 if (tx.denominations && Object.keys(tx.denominations).length > 0) {
-                     if (debitEntries.cash.length < 4) debitEntries.cash.push(tx.amount);
-                 } else {
-                     if (debitEntries.upi.length < 4) debitEntries.upi.push(tx.amount);
-                 }
+                 debitEntries.push(tx.amount);
             }
         });
     
         const head = [
-            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [230, 230, 230] } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center', fillColor: [230, 230, 230] } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center', fillColor: [230, 230, 230] } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [230, 230, 230] } }],
+            [
+                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } }, 
+                { content: 'Cash', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } }, 
+                { content: 'UPI', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } }, 
+                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } }
+            ],
             ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const row: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
-            for (let i = 0; i < 4; i++) row.push(data.upi[i] || '');
-            row.push(data.total);
-            return row;
+            const rowData: (string | number)[] = [name];
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
+            rowData.push(data.total);
+            return rowData;
         });
     
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebit = [...debitEntries.cash, ...debitEntries.upi].reduce((s, a) => s + a, 0);
+        const totalDebit = debitEntries.reduce((s, a) => s + a, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const footer = [
-            [
-                { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' }},
-                { content: '', colSpan: 8 },
-                { content: totalCredit, styles: { halign: 'right', fontStyle: 'bold', textColor: [0, 128, 0] } } // Green text
-            ],
-            [
-                { content: 'Entry', styles: { halign: 'left', fontStyle: 'bold', textColor: [255, 0, 0] }}, // Red text
-                ...debitEntries.cash.slice(0, 4).map(v => ({ content: v, styles: { textColor: [255, 0, 0] }})),
-                ...Array(4 - debitEntries.cash.length).fill(''),
-                ...debitEntries.upi.slice(0, 4).map(v => ({ content: v, styles: { textColor: [255, 0, 0] }})),
-                ...Array(4 - debitEntries.upi.length).fill(''),
-                { content: totalDebit, styles: { halign: 'right', fontStyle: 'bold', textColor: [255, 0, 0] } } // Red text
-            ],
-            [
-                { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: '', colSpan: 8 },
-                { content: closingBalance, styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance < 0 ? [255, 0, 0] : [0, 128, 0] } }
-            ]
-        ];
+        const footer = [];
+        footer.push([
+            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' }},
+            { content: totalCredit, styles: { fillColor: '#dff0d8', fontStyle: 'bold' } }
+        ]);
+
+        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
+        for (let i = 0; i < debitEntries.length && i < 8; i++) {
+            entryRow.push(debitEntries[i]);
+        }
+        for (let i = debitEntries.length; i < 8; i++) {
+            entryRow.push('');
+        }
+        entryRow.push({ content: totalDebit, styles: { fillColor: '#f2dede', fontStyle: 'bold' } });
+        footer.push(entryRow);
+        
+        footer.push([
+            { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: closingBalance, styles: { fillColor: '#dff0d8', fontStyle: 'bold' } }
+        ]);
 
         (doc as any).autoTable({
             head: head,
             body: body,
             foot: footer,
-            startY: 20,
+            startY: 15,
             theme: 'grid',
             headStyles: {
                 textColor: [0, 0, 0],
@@ -154,28 +153,18 @@ function CompanyTransactionsContent() {
                 halign: 'center'
             },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: [230, 230, 230] }, // Customer Name
-                9: { fontStyle: 'bold', halign: 'right' } // Total Credit
+                0: { fontStyle: 'bold', fillColor: '#f2f2f2' },
+                9: { fontStyle: 'bold', fillColor: '#f2f2f2' }
             },
             didParseCell: function(data: any) {
-                // Format all numbers
-                 if ((data.section === 'body' || data.section === 'foot') && typeof data.cell.raw === 'number') {
-                    data.cell.text = [data.cell.raw.toLocaleString('en-IN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                    })];
+                if ((data.section === 'body' || data.section === 'foot') && typeof data.cell.raw === 'number') {
+                    data.cell.text = ['₹' + data.cell.raw.toLocaleString('en-IN')];
                     data.cell.styles.halign = 'right';
                 }
-
-                // Customer Total Credit font color
-                if (data.section === 'body' && data.column.index === 9) {
-                    data.cell.styles.textColor = [0, 128, 0]; // Green
+                 // Align header text
+                if (data.section === 'head') {
+                    data.cell.styles.halign = 'center';
                 }
-            },
-            didDrawPage: function (data: any) {
-                const finalY = (doc as any).lastAutoTable.finalY || data.cursor.y;
-                doc.setFontSize(10);
-                doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, data.settings.margin.left, finalY + 10);
             }
         });
     
