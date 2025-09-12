@@ -7,7 +7,7 @@ import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash, FileDown, Pencil, Trash } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PlusCircle, User, Hash, FileDown, Pencil, Trash, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
@@ -17,6 +17,7 @@ import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { numberToWords } from '@/lib/number-to-words';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 function CompanyTransactionsContent() {
     const router = useRouter();
@@ -93,7 +94,7 @@ function CompanyTransactionsContent() {
     
         filteredTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT')) {
-                const customer = tx.customerName || 'N/A';
+                const customer = tx.companyName || 'N/A';
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
@@ -238,43 +239,51 @@ function CompanyTransactionsContent() {
                     <div className="space-y-4">
                         {filteredTransactions.length > 0 ? (
                             filteredTransactions.map((tx) => (
-                                <div key={tx.id} className="rounded-lg border">
-                                    <div className="p-4">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
-                                                <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-green-100' : 'bg-red-100')}>
-                                                    {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
-                                                </div>
-                                                <div>
-                                                    <p className="font-medium">{tx.customerName || 'N/A'}</p>
-                                                    <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
-                                                </div>
+                                <Collapsible key={tx.id} className="rounded-lg border">
+                                    <div className="p-4 flex items-center justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-green-100' : 'bg-red-100')}>
+                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                             </div>
-                                            <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
-                                                {formatCurrency(tx.amount)}
-                                            </p>
+                                            <div>
+                                                <p className="font-medium">{tx.companyName || 'N/A'}</p>
+                                                <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
+                                            </div>
                                         </div>
-                                         <div className='border-t pt-4 mt-4 space-y-2 text-sm'>
-                                            <div className="text-xs text-muted-foreground">{formatDate(new Date(tx.timestamp))}</div>
-                                             {tx.upiTransactionId && (
-                                                <div className="flex items-center gap-2 text-xs">
-                                                    <Hash className="h-3 w-3 text-muted-foreground" />
-                                                    <span>{tx.upiTransactionId}</span>
-                                                </div>
-                                             )}
+                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
+                                            {formatCurrency(tx.amount)}
+                                        </p>
+                                    </div>
+                                    <CollapsibleContent>
+                                     <div className='border-t p-4 space-y-2 text-sm'>
+                                        <div className="text-xs text-muted-foreground">{formatDate(new Date(tx.timestamp))}</div>
+                                         {tx.upiTransactionId && (
+                                            <div className="flex items-center gap-2 text-xs">
+                                                <Hash className="h-3 w-3 text-muted-foreground" />
+                                                <span>{tx.upiTransactionId}</span>
+                                            </div>
+                                         )}
+                                    </div>
+                                    </CollapsibleContent>
+                                    <div className="border-t bg-muted/50 p-2 flex justify-between items-center">
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="ghost" size="sm">
+                                                <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
+                                                Details
+                                            </Button>
+                                        </CollapsibleTrigger>
+                                        <div className='flex justify-end gap-2'>
+                                            <Button variant="ghost" size="sm" onClick={() => handleEdit(tx)}>
+                                                <Pencil className="mr-2 h-3 w-3" />
+                                                Edit
+                                            </Button>
+                                            <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(tx.id)}>
+                                                <Trash className="mr-2 h-3 w-3" />
+                                                Delete
+                                            </Button>
                                         </div>
                                     </div>
-                                    <div className="border-t bg-muted/50 p-2 flex justify-end gap-2">
-                                        <Button variant="ghost" size="sm" onClick={() => handleEdit(tx)}>
-                                            <Pencil className="mr-2 h-3 w-3" />
-                                            Edit
-                                        </Button>
-                                        <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-600" onClick={() => handleDelete(tx.id)}>
-                                            <Trash className="mr-2 h-3 w-3" />
-                                            Delete
-                                        </Button>
-                                    </div>
-                                </div>
+                                </Collapsible>
                             ))
                         ) : (
                             <p className="text-center text-muted-foreground py-8">No transactions found for this company and location.</p>
@@ -290,7 +299,7 @@ function CompanyTransactionsContent() {
                     transactionType={editingTransaction ? null : transactionType}
                     transaction={editingTransaction}
                     defaults={{
-                        companyName: company,
+                        companyName: company || undefined,
                         location: location || undefined,
                         scope: 'company'
                     }}
@@ -308,5 +317,7 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
