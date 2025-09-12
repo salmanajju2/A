@@ -148,17 +148,17 @@ function CompanyTransactionsContent() {
         const footerRows = [
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(totalCredit), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: formatFooterAmount(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries.slice(0, 8).map(amt => formatValue(amt)),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } },
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: formatFooterAmount(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
             ],
         ];
         
@@ -202,23 +202,6 @@ function CompanyTransactionsContent() {
                 // Format all numeric cells
                 if (typeof data.cell.raw === 'number') {
                     data.cell.text = [formatValue(data.cell.raw)];
-                }
-
-                // Color footer rows
-                const rawText = data.row.cells[0]?.raw?.toString() || '';
-                if (rawText.includes('Total Credit')) {
-                    const amountCell = data.row.cells[data.row.cells.length - 1];
-                    amountCell.styles.textColor = greenColor;
-                } else if (rawText.includes('Entry')) {
-                    const amountCell = data.row.cells[data.row.cells.length - 1];
-                    amountCell.styles.textColor = redColor;
-                } else if (rawText.includes('Closing Balance')) {
-                    const amountCell = data.row.cells[data.row.cells.length - 1];
-                    if (closingBalance >= 0) {
-                        amountCell.styles.textColor = greenColor;
-                    } else {
-                        amountCell.styles.textColor = redColor;
-                    }
                 }
             },
             didDrawPage: function(data) {
