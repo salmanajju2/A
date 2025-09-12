@@ -114,7 +114,7 @@ function CompanyTransactionsContent() {
             for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
             for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
             rowData.push(data.total);
-            return rowData.map(cell => (typeof cell === 'number' ? formatCurrency(cell, { symbol: '' }) : cell));
+            return rowData.map(cell => (typeof cell === 'number' ? formatCurrency(cell) : cell));
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
@@ -128,7 +128,7 @@ function CompanyTransactionsContent() {
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0,8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' }})),
+                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' } })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
                 { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
@@ -154,6 +154,10 @@ function CompanyTransactionsContent() {
             theme: 'grid',
             headStyles: {
                 fillColor: '#f2f2f2',
+                textColor: '#000000',
+                fontStyle: 'bold',
+            },
+            footStyles: {
                 textColor: '#000000',
                 fontStyle: 'bold',
             },
