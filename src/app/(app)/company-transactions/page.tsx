@@ -73,25 +73,25 @@ function CompanyTransactionsContent() {
         const generationDate = new Date();
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-
+    
         // Main Title
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-
+    
         // Sub Title
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-
-
+    
+    
         // --- Data Processing ---
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
-
+    
         // Sort transactions by customer name for grouping
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
-
+    
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
@@ -108,7 +108,7 @@ function CompanyTransactionsContent() {
                 debitEntries.push(tx.amount);
             }
         });
-
+    
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const rowData: any[] = [name];
@@ -117,33 +117,31 @@ function CompanyTransactionsContent() {
             rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold' } });
             return rowData;
         });
-
-
+    
+    
         // --- Table Footer Calculations ---
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
-
+    
         const footer = [
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit), styles: { fillColor: [255,255,255] } }
+                { content: formatCurrency(totalCredit) }
             ],
              [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries.slice(0, 3).map(amt => formatCurrency(amt)),
-                // Fill remaining cells if less than 3 entries
                 ...Array(Math.max(0, 3 - debitEntries.length)).fill(''),
-                // Empty UPI cells
                 '', '', '', '',
-                { content: formatCurrency(totalDebit), colSpan: 2, styles: { fillColor: [255,255,255] } },
+                { content: formatCurrency(totalDebit), colSpan: 2 },
              ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance), styles: { fillColor: [255,255,255] } }
+                { content: formatCurrency(closingBalance) }
             ],
         ];
-
+    
         (doc as any).autoTable({
             head: [
                 [
@@ -159,12 +157,12 @@ function CompanyTransactionsContent() {
             startY: 35,
             theme: 'grid',
             headStyles: {
-                fillColor: [230, 230, 230], // Light grey
+                fillColor: [230, 230, 230],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold'
             },
             columnStyles: {
-                0: { fontStyle: 'bold' }, // Customer Name
+                0: { fontStyle: 'bold' },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -173,16 +171,15 @@ function CompanyTransactionsContent() {
                 6: { halign: 'right' },
                 7: { halign: 'right' },
                 8: { halign: 'right' },
-                9: { halign: 'right', fontStyle: 'bold' } // Total Credit
+                9: { halign: 'right', fontStyle: 'bold' }
             },
             didParseCell: function(data: any) {
-                // Center align all header cells
                 if (data.section === 'head') {
                     data.cell.styles.halign = 'center';
                 }
             }
         });
-
+    
         doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
     }
 
