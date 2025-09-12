@@ -13,7 +13,7 @@ import { Trash, FileDown, Download } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 
 interface HistoryToolbarProps {
@@ -76,7 +76,7 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
             document.body.removeChild(link);
         }
         toast({ title: `Exported ${rows.length} transactions to CSV` });
-    }
+    };
 
     const exportToPDF = () => {
       const rows = transactions.filter(tx => selectedIds.includes(tx.id));
@@ -102,7 +102,7 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
         tableRows.push(transactionData);
       });
   
-      (doc as any).autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 20,
