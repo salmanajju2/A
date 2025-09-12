@@ -42,7 +42,7 @@ const formSchema = z.object({
 type TransactionFormValues = z.infer<typeof formSchema>;
 
 export function TransactionDialog({ open, onOpenChange, transactionType }: TransactionDialogProps) {
-  const { addTransaction } = useAppContext();
+  const { addTransaction, user } = useAppContext();
   const { toast } = useToast();
 
   const form = useForm<TransactionFormValues>({
@@ -100,7 +100,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[625px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Transaction: {TRANSACTION_TYPES[transactionType]}</DialogTitle>
           <DialogDescription>
@@ -109,6 +109,11 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            
+            <FormField control={form.control} name="customerName" render={({ field }) => (
+                <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+
             {isCashTransaction ? (
                 <DenominationInput form={form} />
             ) : (
@@ -119,7 +124,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                     <FormItem>
                         <FormLabel>Amount</FormLabel>
                         <FormControl>
-                        <Input type="number" step="0.01" {...field} />
+                          <Input type="number" step="0.01" {...field} />
                         </FormControl>
                         <FormMessage />
                     </FormItem>
@@ -127,18 +132,20 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                 />
             )}
             
-            <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="customerName" render={({ field }) => (
-                    <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-                <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
-                    <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
-            </div>
+            {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
+                <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>}
 
             <FormField control={form.control} name="description" render={({ field }) => (
                 <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
+            
+            <FormItem>
+                <FormLabel>Recorded By</FormLabel>
+                <FormControl>
+                    <Input disabled value={user?.name} />
+                </FormControl>
+            </FormItem>
 
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
