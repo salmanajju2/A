@@ -69,7 +69,7 @@ function CompanyTransactionsContent() {
                 description={`A summary of ${filteredTransactions.length} transactions.`}
             >
                  <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => handleOpenDialog('UPI_DEBIT')}>
+                    <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         payment credit ho
                     </Button>
@@ -109,7 +109,7 @@ function CompanyTransactionsContent() {
                                             {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                         </div>
                                         <div>
-                                            <p className="font-medium">{`ye paymrt credit ho naki denit`}</p>
+                                            <p className="font-medium">{TRANSACTION_TYPES[tx.type]}</p>
                                             <p className="text-sm text-muted-foreground">{formatDate(new Date(tx.timestamp))}</p>
                                         </div>
                                     </div>
