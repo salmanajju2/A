@@ -21,6 +21,7 @@ import { TRANSACTION_TYPES } from '@/lib/constants';
 import { DenominationInput } from './denomination-input';
 import { useEffect } from 'react';
 import { formatCurrency } from '@/lib/helpers';
+import { ScrollArea } from '../ui/scroll-area';
 
 interface TransactionDialogProps {
   open: boolean;
@@ -112,54 +113,56 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            
-            {isCashTransaction ? (
-                <DenominationInput form={form} />
-            ) : (
-                <FormField
-                    control={form.control}
-                    name="amount"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Amount</FormLabel>
-                        <FormControl>
-                          <Input type="number" step="0.01" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            )}
-            
-            {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
-                <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>}
+          <form onSubmit={form.handleSubmit(onSubmit)}>
+            <ScrollArea className="h-[60vh] pr-6">
+              <div className="space-y-4">
+                {isCashTransaction ? (
+                    <DenominationInput form={form} />
+                ) : (
+                    <FormField
+                        control={form.control}
+                        name="amount"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Amount</FormLabel>
+                            <FormControl>
+                              <Input type="number" step="0.01" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                )}
+                
+                {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
+                    <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>}
 
-            <FormField control={form.control} name="customerName" render={({ field }) => (
-                <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
+                <FormField control={form.control} name="customerName" render={({ field }) => (
+                    <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
 
-             <FormField control={form.control} name="companyName" render={({ field }) => (
-                <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Enter company name" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
+                 <FormField control={form.control} name="companyName" render={({ field }) => (
+                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Enter company name" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
 
-             <FormField control={form.control} name="location" render={({ field }) => (
-                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
+                 <FormField control={form.control} name="location" render={({ field }) => (
+                    <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
 
-            <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea placeholder="Add a description or any notes..." {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-            
-            <FormItem>
-                <FormLabel>Recorded By</FormLabel>
-                <FormControl>
-                    <Input disabled value={user?.name} />
-                </FormControl>
-            </FormItem>
-
-            <DialogFooter>
+                <FormField control={form.control} name="description" render={({ field }) => (
+                    <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea placeholder="Add a description or any notes..." {...field} /></FormControl><FormMessage /></FormItem>
+                )}/>
+                
+                <FormItem>
+                    <FormLabel>Recorded By</FormLabel>
+                    <FormControl>
+                        <Input disabled value={user?.name} />
+                    </FormControl>
+                </FormItem>
+              </div>
+            </ScrollArea>
+            <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
               <Button type="submit">Add Transaction</Button>
             </DialogFooter>
