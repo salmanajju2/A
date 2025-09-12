@@ -30,6 +30,16 @@ function CompanyTransactionsContent() {
     const company = searchParams.get('company');
     const location = searchParams.get('location');
 
+    const filteredTransactions = useMemo(() => {
+        if (!company) return [];
+        return transactions.filter(t => {
+            const companyMatch = t.companyName === company;
+            const locationMatch = !location || t.location === location;
+            // Show both company-scoped and global transactions that match company/location
+            return companyMatch && locationMatch;
+        }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [transactions, company, location]);
+
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
         setTransactionType(type);
@@ -113,7 +123,7 @@ function CompanyTransactionsContent() {
             [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]) : ''),
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]) : ''),
-                '',
+                { content: 'Total Debit', styles: { fontStyle: 'bold', halign: 'right' } },
                 { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
             ],
             ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
@@ -142,7 +152,7 @@ function CompanyTransactionsContent() {
                 10: { halign: 'right' }
             },
             didParseCell: function(data: any) {
-                if (data.section === 'body' && data.column.index >= 1 && data.column.index < 10) {
+                if (data.section === 'body' && data.column.index >= 1 && data.column.index < 9) {
                     data.cell.styles.halign = 'right';
                 }
             }
@@ -156,16 +166,6 @@ function CompanyTransactionsContent() {
         // 5. Save PDF
         doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
     }
-
-    const filteredTransactions = useMemo(() => {
-        if (!company) return [];
-        return transactions.filter(t => {
-            const companyMatch = t.companyName === company;
-            const locationMatch = !location || t.location === location;
-            // Show both company-scoped and global transactions that match company/location
-            return companyMatch && locationMatch;
-        }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }, [transactions, company, location]);
 
     const summary = useMemo(() => {
         return filteredTransactions.reduce((acc, tx) => {
@@ -253,6 +253,12 @@ function CompanyTransactionsContent() {
                                         </div>
                                          <div className='border-t pt-4 mt-4 space-y-2 text-sm'>
                                             <div className="text-xs text-muted-foreground">{formatDate(new Date(tx.timestamp))}</div>
+                                             {tx.upiTransactionId && (
+                                                <div className="flex items-center gap-2 text-xs">
+                                                    <Hash className="h-3 w-3 text-muted-foreground" />
+                                                    <span>{tx.upiTransactionId}</span>
+                                                </div>
+                                             )}
                                         </div>
                                     </div>
                                     <div className="border-t bg-muted/50 p-2 flex justify-end gap-2">
@@ -274,17 +280,19 @@ function CompanyTransactionsContent() {
                 </CardContent>
             </Card>
 
-            <TransactionDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                transactionType={transactionType}
-                transaction={editingTransaction}
-                defaults={{
-                    companyName: company,
-                    location: location || undefined,
-                    scope: 'company'
-                }}
-            />
+            {dialogOpen && (
+                <TransactionDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    transactionType={transactionType}
+                    transaction={editingTransaction}
+                    defaults={{
+                        companyName: company,
+                        location: location || undefined,
+                        scope: 'company'
+                    }}
+                />
+            )}
         </div>
     );
 }

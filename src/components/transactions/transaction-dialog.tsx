@@ -71,26 +71,18 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   });
 
   useEffect(() => {
-    if (open && transaction) {
-      form.reset({
-        amount: transaction.amount,
-        customerName: transaction.customerName,
-        companyName: transaction.companyName,
-        location: transaction.location,
-        denominations: transaction.denominations,
-        scope: transaction.scope || 'global',
-        upiTransactionId: transaction.upiTransactionId,
-      });
-    } else if (open) {
-      form.reset({
+    if (open) {
+      const initialValues = {
         amount: 0,
-        customerName: '',
+        customerName: defaults?.customerName || '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
         denominations: {},
         scope: defaults?.scope || 'global',
         upiTransactionId: '',
-      });
+        ...transaction
+      };
+      form.reset(initialValues);
     }
   }, [open, transaction, form, defaults]);
   
@@ -100,7 +92,9 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
             const value = parseInt(key.replace('d', ''));
             return acc + (count || 0) * value;
         }, 0);
-        form.setValue('amount', total, { shouldValidate: true });
+        if (form.getValues('amount') !== total) {
+          form.setValue('amount', total, { shouldValidate: true });
+        }
     }
   }, [watchedDenominations, isCashTransaction, form]);
 
@@ -111,13 +105,8 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
             throw new Error("Cannot submit without a transaction type.");
         }
 
-        if(isCashTransaction && data.amount !== form.getValues('amount')) {
-            toast({ variant: 'destructive', title: 'Mismatch', description: 'Denomination total does not match amount.'});
-            return;
-        }
-
         if (isEditMode && transaction) {
-            updateTransaction(transaction.id, { ...transaction, ...data });
+            updateTransaction(transaction.id, data );
             toast({
                 title: 'Transaction Updated',
                 description: `Transaction ${transaction.id} has been updated.`,
@@ -169,7 +158,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                         <FormItem>
                             <FormLabel>Amount</FormLabel>
                             <FormControl>
-                              <Input type="number" step="0.01" {...field} />
+                              <Input type="number" step="0.01" {...field} onChange={e => field.onChange(parseFloat(e.target.value) || 0)} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -230,7 +219,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     </FormItem>
                   )}
                 />
-                 {!isCashTransaction && (
+                 {currentTransactionType.includes('UPI') && (
                     <FormField
                       control={form.control}
                       name="upiTransactionId"
