@@ -74,129 +74,91 @@ function CompanyTransactionsContent() {
     };
     
     const handleDownloadPdf = () => {
-        const doc = new jsPDF({ orientation: 'landscape' }) as jsPDFWithAutoTable;
-        const generationDate = new Date();
-        const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
-        const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+        const doc = new jsPDF() as jsPDFWithAutoTable;
         
-        doc.setFontSize(22);
-        doc.setFont('helvetica', 'bold');
-        doc.text(`Report for ${company} ${location || ''}`.trim(), doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
-    
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
-    
-        const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[], total: number } } = {};
-        const debitEntries: (number | null)[] = Array(8).fill(null);
-    
+        const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[] } } = {};
+
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
-    
+
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    customerCredits[tx.customerName] = { cash: Array(4).fill(''), upi: Array(4).fill(''), total: 0 };
+                    customerCredits[tx.customerName] = { cash: ['', '', ''], upi: ['', '', ''] };
                 }
                 const customer = customerCredits[tx.customerName];
                 if (tx.type === 'CASH_CREDIT') {
                     const emptyIndex = customer.cash.findIndex(c => c === '');
-                    if(emptyIndex !== -1) customer.cash[emptyIndex] = tx.amount;
+                    if (emptyIndex !== -1) customer.cash[emptyIndex] = tx.amount;
                 } else if (tx.type === 'UPI_CREDIT') {
                     const emptyIndex = customer.upi.findIndex(c => c === '');
-                    if(emptyIndex !== -1) customer.upi[emptyIndex] = tx.amount;
-                }
-                customer.total += tx.amount;
-            } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
-                 const emptyDebitIndex = debitEntries.findIndex(d => d === null);
-                if (emptyDebitIndex !== -1) {
-                    debitEntries[emptyDebitIndex] = tx.amount;
+                    if (emptyIndex !== -1) customer.upi[emptyIndex] = tx.amount;
                 }
             }
         });
-    
-        const body = Object.entries(customerCredits).map(([name, data]) => {
-             const formattedCash = data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: ''}) : c);
-            const formattedUpi = data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: ''}) : u);
 
-            return [
-                name,
-                ...formattedCash,
-                ...formattedUpi,
-                formatCurrency(data.total, { symbol: ''}),
-            ];
+        const body = Object.entries(customerCredits).map(([name, data]) => {
+            const total = [...data.cash, ...data.upi].reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
+            return [name, ...data.cash, ...data.upi, total];
         });
 
-        const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebit = debitEntries.reduce((sum, amount) => sum + (amount || 0), 0);
+        const totalCredit = body.reduce((sum, row) => sum + (row[row.length - 1] as number), 0);
+        const totalDebit = filteredTransactions
+            .filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT')
+            .reduce((sum, tx) => sum + tx.amount, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const footerContent = [];
-
-        // Total Credit Row
-        footerContent.push([
-            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: formatCurrency(totalCredit, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold' } }
-        ]);
-        
-        // Entry Row
-        const entryRow: any[] = [
-            { content: 'Entry', styles: { fontStyle: 'bold' } }
-        ];
-        for (let i = 0; i < 8; i++) {
-            entryRow.push({
-                content: debitEntries[i] ? formatCurrency(debitEntries[i] || 0, { symbol: ''}) : '',
-                styles: { halign: 'right', fontStyle: 'bold' }
-            });
-        }
-        entryRow.push({
-            content: formatCurrency(totalDebit, { symbol: ''}),
-            styles: { halign: 'right', fontStyle: 'bold' }
-        });
-        footerContent.push(entryRow);
-
-
-        // Closing Balance Row
-        footerContent.push([
-            { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: formatCurrency(closingBalance, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold' } }
-        ]);
-
-        
         autoTable(doc, {
-            head: [
-                [
-                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } },
-                    { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle', halign: 'center' } }
-                ],
-                ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
-            ],
+            head: [[
+                'NAME',
+                'CASH 1ST',
+                'CASH 2ND',
+                'CASH 3RD',
+                'UPI 1ST',
+                'UPI 2ND',
+                'UPI 3RD',
+                'TOTAL',
+            ]],
             body: body,
-            foot: footerContent,
-            startY: 35,
+            foot: [
+                [
+                    { content: 'TOTAL', styles: { fontStyle: 'bold', halign: 'center' } },
+                    '', '', '', '', '', '',
+                    { content: totalCredit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#008000' } }
+                ],
+                [
+                    { content: 'ENTRY', styles: { fontStyle: 'bold', halign: 'center' } },
+                    '',
+                    { content: totalDebit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#FF0000' } },
+                    '', '', '', '',
+                    { content: totalDebit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#FF0000' } }
+                ],
+                [
+                    { content: 'BALANCE', styles: { fontStyle: 'bold', halign: 'center' } },
+                     '', '', '', '', '', '',
+                    { content: closingBalance, styles: { fontStyle: 'bold', halign: 'right' } }
+                ]
+            ],
             theme: 'grid',
-            styles: {
+            headStyles: {
+                fillColor: '#FFFFFF',
+                textColor: '#C00000',
+                fontStyle: 'bold',
+                halign: 'center',
+                lineColor: [0, 0, 0],
+                lineWidth: 0.1,
+            },
+            bodyStyles: {
+                lineColor: [0, 0, 0],
+                lineWidth: 0.1,
+            },
+            footStyles: {
+                fillColor: '#FFFFFF',
                 textColor: '#000000',
                 lineColor: [0, 0, 0],
                 lineWidth: 0.1,
-                font: 'helvetica',
-                fontStyle: 'normal'
-            },
-            headStyles: {
-                fillColor: '#f2f2f2',
-                textColor: '#000000',
-                fontStyle: 'bold',
-                halign: 'center'
-            },
-            footStyles: {
-                fontStyle: 'bold',
-                textColor: '#000000',
-                lineColor: [0, 0, 0],
-                lineWidth: 0.1
             },
             columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 35, halign: 'left', fillColor: '#f2f2f2' },
+                0: { halign: 'left' },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -204,13 +166,24 @@ function CompanyTransactionsContent() {
                 5: { halign: 'right' },
                 6: { halign: 'right' },
                 7: { halign: 'right' },
-                8: { halign: 'right' },
-                9: { halign: 'right', fontStyle: 'bold' },
             },
+            didParseCell: (data) => {
+                // For empty cells in body, make sure they are empty strings
+                if (data.section === 'body' && data.cell.raw === '') {
+                    data.cell.text = [''];
+                }
+                 // For number cells in body and foot, format them
+                if (data.section === 'body' || data.section === 'foot') {
+                    if (typeof data.cell.raw === 'number') {
+                         data.cell.text = [data.cell.raw.toLocaleString('en-IN')];
+                    }
+                }
+            }
         });
     
-        doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
+        doc.save(`${company}_${location ? location + '_' : ''}${new Date().toISOString().split('T')[0]}.pdf`);
     }
+
 
     if (!company) {
         return (
