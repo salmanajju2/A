@@ -139,25 +139,21 @@ function CompanyTransactionsContent() {
             }
             return value;
         }
-        
-        const formatFooterAmount = (amount: number) => {
-            return '₹' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        }
-        
+
         const footerRows = [
             [
                 { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
+                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries.slice(0, 8).map(amt => ({ content: formatValue(amt), styles: { halign: 'right' } })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatFooterAmount(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
+                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
             ],
         ];
 
@@ -198,8 +194,11 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right', fontStyle: 'bold' },
             },
             didParseCell: function(data: any) {
-                if (typeof data.cell.raw === 'number' && data.section !== 'body') {
+                if (typeof data.cell.raw === 'number' && data.section === 'body' && data.column.dataKey !== 9) {
                      data.cell.text = [formatValue(data.cell.raw)];
+                }
+                if (typeof data.cell.raw === 'number' && data.section === 'body' && data.column.dataKey === 9) {
+                     data.cell.text = [formatCurrency(data.cell.raw)];
                 }
             },
         });
@@ -342,3 +341,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
