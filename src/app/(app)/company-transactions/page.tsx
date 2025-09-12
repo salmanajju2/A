@@ -110,7 +110,7 @@ function CompanyTransactionsContent() {
         });
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const rowData: (string | number)[] = [name];
+             const rowData: (string | number)[] = [name];
             for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
             for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
             rowData.push(data.total);
@@ -127,10 +127,10 @@ function CompanyTransactionsContent() {
                 { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
             ],
             [
-                { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#ffffff' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: {fillColor: '#ffffff'} })),
-                ...Array(Math.max(0, 8 - debitEntries.length)).fill({ content: '', styles: {fillColor: '#ffffff'} }),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffffff' } }
+                { content: 'Entry', styles: { fontStyle: 'bold', halign: 'left' } },
+                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' } })),
+                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } }
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } },
@@ -156,21 +156,18 @@ function CompanyTransactionsContent() {
                 textColor: '#000000',
                 lineColor: [0, 0, 0],
                 lineWidth: 0.1,
-                font: 'helvetica'
+                font: 'helvetica',
             },
             headStyles: {
                 fillColor: '#f2f2f2',
                 textColor: '#000000',
                 fontStyle: 'bold',
             },
-            bodyStyles: {
-                fontStyle: 'normal'
-            },
             footStyles: {
-                fontStyle: 'bold'
+                fontStyle: 'bold',
             },
             columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 35 },
+                0: { fontStyle: 'bold', cellWidth: 35, halign: 'left' },
                 1: { halign: 'right', fontStyle: 'normal' },
                 2: { halign: 'right', fontStyle: 'normal' },
                 3: { halign: 'right', fontStyle: 'normal' },
@@ -182,9 +179,8 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right', fontStyle: 'bold' },
             },
              didParseCell: function (data) {
-                // For body cells, format numbers to currency
-                if (data.section === 'body' && typeof data.cell.raw === 'number') {
-                     data.cell.text = [formatCurrency(data.cell.raw)];
+                if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw > 0) {
+                     data.cell.text = [formatCurrency(data.cell.raw as number)];
                 }
             },
         });
