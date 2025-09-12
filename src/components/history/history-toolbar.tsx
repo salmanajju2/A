@@ -9,12 +9,9 @@ import { Label } from '@/components/ui/label';
 import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import type { Transaction } from '@/lib/types';
 import { Button } from '../ui/button';
-import { Trash, FileDown, Download } from 'lucide-react';
+import { Trash } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
 
 interface HistoryToolbarProps {
   transactions: Transaction[];
@@ -29,89 +26,29 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
   const searchParams = useSearchParams();
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get('company') || 'all');
-  const [locationFilter, setLocationFilter] = useState<string>(searchParams.get('location') || 'all');
+  const [locationFilter, setLocationFilter] = useState<string>(search_params.get('location') || 'all');
   const { deleteTransactions } = useAppContext();
   const { toast } = useToast();
 
   useEffect(() => {
-    // Only show global transactions on the main history page
-    const globalTransactions = transactions.filter(t => t.scope !== 'company');
-    
-    const filtered = globalTransactions.filter(t => {
+    // Apply filters to the transactions passed in props
+    const filtered = transactions.filter(t => {
+      // On the main history page, only show global transactions.
+      if (t.scope === 'company' && !searchParams.has('company')) return false;
+
       const typeMatch = typeFilter === 'all' || t.type === typeFilter;
       const companyMatch = companyFilter === 'all' || t.companyName === companyFilter;
       const locationMatch = locationFilter === 'all' || t.location === locationFilter;
+      
       return typeMatch && companyMatch && locationMatch;
     });
     onFilter(filtered);
-  }, [typeFilter, companyFilter, locationFilter, transactions, onFilter]);
+  }, [typeFilter, companyFilter, locationFilter, transactions, onFilter, searchParams]);
 
   const handleDelete = () => {
     deleteTransactions(selectedIds);
     toast({ title: `${selectedIds.length} transaction(s) deleted.` });
   };
-
-  const exportToCSV = () => {
-        const rows = transactions.filter(tx => selectedIds.includes(tx.id));
-        if (rows.length === 0) {
-            toast({ variant: "destructive", title: "No transactions selected to export" });
-            return;
-        }
-
-        const headers = Object.keys(rows[0]);
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => headers.map(header => JSON.stringify((row as any)[header])).join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement("a");
-        if (link.download !== undefined) {
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "transactions.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-        toast({ title: `Exported ${rows.length} transactions to CSV` });
-    };
-
-    const exportToPDF = () => {
-      const rows = transactions.filter(tx => selectedIds.includes(tx.id));
-      if (rows.length === 0) {
-        toast({ variant: "destructive", title: "No transactions selected to export" });
-        return;
-      }
-  
-      const doc = new jsPDF();
-      
-      const tableColumn = ["Date", "Type", "Amount", "Customer", "Company", "Location"];
-      const tableRows: any[] = [];
-  
-      rows.forEach(transaction => {
-        const transactionData = [
-          new Date(transaction.timestamp).toLocaleString(),
-          transaction.type,
-          transaction.amount.toString(),
-          transaction.customerName || '',
-          transaction.companyName || '',
-          transaction.location || '',
-        ];
-        tableRows.push(transactionData);
-      });
-  
-      (doc as any).autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 20,
-      });
-      doc.text(`Transaction History (${rows.length} items)`, 14, 15);
-      doc.save("transactions.pdf");
-      toast({ title: `Exported ${rows.length} transactions to PDF` });
-    };
-
 
   return (
     <Card>
@@ -167,14 +104,6 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
                         Delete ({selectedCount})
                     </Button>
                 )}
-                <Button variant="outline" size="sm" onClick={exportToPDF}>
-                    <FileDown className="mr-2 h-4 w-4" />
-                    PDF
-                </Button>
-                <Button variant="outline" size="sm" onClick={exportToCSV}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export
-                </Button>
             </div>
         </div>
       </CardContent>
