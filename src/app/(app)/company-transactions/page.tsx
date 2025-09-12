@@ -116,9 +116,9 @@ function CompanyTransactionsContent() {
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const rowData: any[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i]) : '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i]) : '');
-            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold' } });
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i], { symbol: '' }) : '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i], { symbol: '' }) : '');
+            rowData.push({ content: formatCurrency(data.total, { symbol: '' }), styles: { fontStyle: 'bold' } });
             return rowData;
         });
     
@@ -149,10 +149,10 @@ function CompanyTransactionsContent() {
         (doc as any).autoTable({
             head: [
                 [
-                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                    { content: 'Customer Name', rowSpan: 2, styles: { valign: 'middle' } },
                     { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
                     { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
-                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
+                    { content: 'Total Credit', rowSpan: 2, styles: { valign: 'middle' } }
                 ],
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
@@ -165,7 +165,8 @@ function CompanyTransactionsContent() {
                 fontStyle: 'bold'
             },
             styles: {
-                textColor: blackColor
+                textColor: blackColor,
+                fillColor: '#ffffff'
             },
             columnStyles: {
                 0: { fontStyle: 'bold' },
@@ -324,3 +325,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
