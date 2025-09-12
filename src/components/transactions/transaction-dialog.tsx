@@ -33,7 +33,6 @@ interface TransactionDialogProps {
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
-  customerName: z.string().optional(),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
@@ -54,7 +53,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      customerName: '',
       companyName: '',
       location: '',
       scope: 'global',
@@ -74,7 +72,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     if (open) {
       const initialValues = {
         amount: 0,
-        customerName: '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
         denominations: {},
@@ -104,20 +101,21 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
             throw new Error("Cannot submit without a transaction type.");
         }
 
+        const transactionData = {
+          ...data,
+          customerName: data.companyName,
+        };
+
         if (isEditMode && transaction) {
-            updateTransaction(transaction.id, data );
+            updateTransaction(transaction.id, transactionData );
             toast({
                 title: 'Transaction Updated',
                 description: `Transaction ${transaction.id} has been updated.`,
             });
         } else {
-             const finalData = { ...data };
-            if (!finalData.customerName) {
-                finalData.customerName = finalData.companyName;
-            }
             addTransaction({
                 type: currentTransactionType,
-                ...finalData,
+                ...transactionData,
             });
             toast({
                 title: 'Transaction Added',
@@ -166,20 +164,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     />
                 )}
                 
-                 <FormField
-                  control={form.control}
-                  name="customerName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Customer Name</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Enter customer's name (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
                 <FormField
                   control={form.control}
                   name="companyName"
