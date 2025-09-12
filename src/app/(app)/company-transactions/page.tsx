@@ -193,13 +193,20 @@ function CompanyTransactionsContent() {
                 halign: 'right',
             },
             columnStyles: {
-                0: { halign: 'left' },
-                1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
-                5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
-                9: { halign: 'right' },
+                0: { halign: 'left', fontStyle: 'bold' },
+                1: { halign: 'right', fontStyle: 'bold' }, 2: { halign: 'right', fontStyle: 'bold' }, 3: { halign: 'right', fontStyle: 'bold' }, 4: { halign: 'right', fontStyle: 'bold' },
+                5: { halign: 'right', fontStyle: 'bold' }, 6: { halign: 'right', fontStyle: 'bold' }, 7: { halign: 'right', fontStyle: 'bold' }, 8: { halign: 'right', fontStyle: 'bold' },
+                9: { halign: 'right', fontStyle: 'bold' },
             },
             didParseCell: (data) => {
-                if (data.row.section === 'foot' || data.row.section === 'head') {
+                if (data.row.section === 'head') {
+                     data.cell.styles.fontStyle = 'bold';
+                     data.cell.styles.valign = 'middle';
+                }
+                 if (data.row.section === 'body') {
+                     data.cell.styles.fontStyle = 'bold';
+                 }
+                if (data.row.section === 'foot') {
                      data.cell.styles.fontStyle = 'bold';
                      data.cell.styles.valign = 'middle';
                 }
