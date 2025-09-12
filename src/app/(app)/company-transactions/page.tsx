@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { TransactionDialog } from '@/components/transactions/transaction-dialog';
-import { TRANSACTION_TYPES } from '@/lib/constants';
+import { TRANSACTION_TYPES, COMPANY_NAMES } from '@/lib/constants';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
@@ -72,7 +72,7 @@ function CompanyTransactionsContent() {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
     
-        doc.setFontSize(14);
+        doc.setFontSize(12);
         doc.text(`Generated on: ${generationDate.toLocaleString('en-IN', {
             year: 'numeric',
             month: 'numeric',
@@ -87,8 +87,10 @@ function CompanyTransactionsContent() {
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
     
         const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-            const nameA = a.customerName || 'z';
-            const nameB = b.customerName || 'z';
+            const nameA = a.customerName || 'zzz'; // sort undefined/null to the end
+            const nameB = b.customerName || 'zzz';
+            if (!a.customerName) return 1;
+            if (!b.customerName) return -1;
             return nameA.localeCompare(nameB);
         });
     
@@ -114,7 +116,7 @@ function CompanyTransactionsContent() {
         });
     
         const head = [
-            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
+            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [230, 230, 230] } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center', fillColor: [230, 230, 230] } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center', fillColor: [230, 230, 230] } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: [230, 230, 230] } }],
             ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
     
@@ -122,24 +124,32 @@ function CompanyTransactionsContent() {
             const row: (string | number)[] = [name];
             for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
             for (let i = 0; i < 4; i++) row.push(data.upi[i] || '');
-            row.push(`₹${data.total.toLocaleString('en-IN')}`);
+            row.push(data.total);
             return row;
         });
     
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = [...debitEntries.cash, ...debitEntries.upi].reduce((s, a) => s + a, 0);
         const closingBalance = totalCredit - totalDebit;
-    
+
         const footer = [
-            [{ content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₹${totalCredit.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [213, 245, 227] } }],
-            [{ content: 'Entry', colSpan: 1, styles: { halign: 'center', fontStyle: 'bold' } },
-             ...debitEntries.cash, ...Array(4 - debitEntries.cash.length).fill(''),
-             ...debitEntries.upi, ...Array(4 - debitEntries.upi.length).fill(''),
-             { content: `₹${totalDebit.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [255, 204, 204] } }
+            [
+                { content: 'Entry', rowSpan: 3, styles: { halign: 'center', valign: 'middle', fillColor: [26, 188, 156], textColor: [255, 255, 255], fontStyle: 'bold' } },
+                { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' }},
+                { content: '', colSpan: 7 },
+                { content: totalCredit, styles: { halign: 'right', fontStyle: 'bold', fillColor: [213, 245, 227] } }
             ],
-            [{ content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } }, { content: `₹${closingBalance.toLocaleString('en-IN')}`, styles: { fontStyle: 'bold', fillColor: [213, 245, 227] } }]
+            [
+                { content: '', colSpan: 8, styles: {halign: 'right'}},
+                { content: totalDebit, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 204, 204] } }
+            ],
+            [
+                { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: '', colSpan: 7 },
+                { content: closingBalance, styles: { halign: 'right', fontStyle: 'bold', fillColor: [213, 245, 227] } }
+            ]
         ];
-    
+
         (doc as any).autoTable({
             head: head,
             body: body,
@@ -147,29 +157,38 @@ function CompanyTransactionsContent() {
             startY: 25,
             theme: 'grid',
             headStyles: {
-                fillColor: [240, 240, 240],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center'
             },
+            footStyles: {
+                halign: 'right',
+            },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: [240, 240, 240] }, // Customer Name
-                9: { fontStyle: 'bold', fillColor: [240, 240, 240], halign: 'right' } // Total Credit
+                0: { fontStyle: 'bold', fillColor: [230, 230, 230] }, // Customer Name
+                9: { fontStyle: 'bold', halign: 'right' } // Total Credit
             },
             didParseCell: function(data: any) {
-                if (data.section === 'body' && data.column.index > 0 && data.column.index < 9) {
-                     if (data.cell.raw !== '') {
-                        data.cell.text = [`₹${Number(data.cell.raw).toLocaleString('en-IN')}`]
+                if ((data.section === 'body' || data.section === 'foot') && data.column.index > 0) {
+                     if (typeof data.cell.raw === 'number') {
+                        data.cell.text = [data.cell.raw.toLocaleString('en-IN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                        })]
                      }
                      data.cell.styles.halign = 'right';
                 }
-                 if (data.section === 'foot' && data.row.index === 1 && data.column.index > 0 && data.column.index < 9) {
-                     if (data.cell.raw !== '') {
-                        data.cell.text = [`₹${Number(data.cell.raw).toLocaleString('en-IN')}`]
-                     }
-                     data.cell.styles.halign = 'right';
+                if(data.section === 'foot') {
+                    if(data.row.index === 0 && data.column.index === 9) data.cell.styles.fillColor = [213, 245, 227];
+                    if(data.row.index === 1 && data.column.index === 9) data.cell.styles.fillColor = [255, 204, 204];
+                    if(data.row.index === 2 && data.column.index === 9) data.cell.styles.fillColor = [213, 245, 227];
                 }
             },
+            didDrawPage: function (data: any) {
+                const finalY = data.cursor.y;
+                doc.setFontSize(10);
+                doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, data.settings.margin.left, finalY + 10);
+            }
         });
     
         doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
@@ -185,6 +204,7 @@ function CompanyTransactionsContent() {
     }
     
     const pageTitle = `${company} ${location || ''}`.trim();
+    const isSatinCompany = (company as (typeof COMPANY_NAMES)[number]) === 'SATIN';
 
     return (
         <div className="flex flex-col gap-8">
@@ -208,9 +228,9 @@ function CompanyTransactionsContent() {
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
+                         <Button variant="outline" onClick={() => handleOpenDialog(isSatinCompany ? 'CASH_CREDIT' : 'UPI_CREDIT')}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            add upi kro
+                            {isSatinCompany ? 'Add Cash' : 'Add UPI'}
                         </Button>
                         <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                              <PlusCircle className="mr-2 h-4 w-4" />
@@ -309,7 +329,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
-
-    

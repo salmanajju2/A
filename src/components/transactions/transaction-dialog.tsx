@@ -168,19 +168,19 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                 )}
                 
                 {!isEntryTransaction && (
-                  <FormField
-                    control={form.control}
-                    name="customerName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Customer Name</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Enter customer's name" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                    <FormField
+                        control={form.control}
+                        name="customerName"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Customer Name</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="Enter customer's name" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                 )}
 
                 <FormField
