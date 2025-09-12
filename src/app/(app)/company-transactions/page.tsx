@@ -79,25 +79,21 @@ function CompanyTransactionsContent() {
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         
-        // --- Colors ---
         const blackColor = '#000000';
         const greyColor = '#f2f2f2';
         const greenColor = '#008000';
         const redColor = '#ff0000';
 
-        // Main Title
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(blackColor);
         doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
     
-        // Sub Title
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(blackColor);
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
-        // --- Data Processing ---
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
     
@@ -120,7 +116,6 @@ function CompanyTransactionsContent() {
             }
         });
     
-        // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const row: (string | number)[] = [name];
             for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
@@ -194,11 +189,16 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right', fontStyle: 'bold' },
             },
             didParseCell: function(data: any) {
-                if (typeof data.cell.raw === 'number' && data.section === 'body' && data.column.dataKey !== 9) {
+                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey !== 9) {
                      data.cell.text = [formatValue(data.cell.raw)];
                 }
-                if (typeof data.cell.raw === 'number' && data.section === 'body' && data.column.dataKey === 9) {
+                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey === 9) {
                      data.cell.text = [formatCurrency(data.cell.raw)];
+                }
+                if (data.row.section === 'foot') {
+                    if (data.cell.raw && (data.cell.raw as any).content) {
+                        data.cell.text = [(data.cell.raw as any).content];
+                    }
                 }
             },
         });
@@ -341,5 +341,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
