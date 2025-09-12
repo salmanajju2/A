@@ -91,7 +91,7 @@ function CompanyTransactionsContent() {
     
         // 3. Prepare table data
         const head = [
-            [{ content: 'Customer Name', rowSpan: 2 }, { content: 'Cash', colSpan: 4 }, { content: 'UPI', colSpan: 4 }, { content: 'Total Credit', rowSpan: 2 }],
+            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
             ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
     
@@ -100,7 +100,7 @@ function CompanyTransactionsContent() {
                 name,
                 ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? formatCurrency(data.cash[i]) : ''),
                 ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? formatCurrency(data.upi[i]) : ''),
-                formatCurrency(data.total)
+                { content: formatCurrency(data.total), styles: { halign: 'right' } }
             ];
         });
     
@@ -109,14 +109,14 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
     
         const footer = [
-            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
             [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]) : ''),
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]) : ''),
                 '',
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede' } }
+                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
             ],
-            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
         ];
     
         body.push(...footer as any);
@@ -147,6 +147,11 @@ function CompanyTransactionsContent() {
                 }
             }
         });
+
+        const finalY = (doc as any).lastAutoTable.finalY;
+
+        doc.setFontSize(10);
+        doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, finalY + 10);
     
         // 5. Save PDF
         doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
