@@ -98,7 +98,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     }
   }, [watchedDenominations, isCashTransaction, form]);
 
-
   const onSubmit = (data: TransactionFormValues) => {
     try {
         if(!currentTransactionType) {
@@ -112,9 +111,13 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                 description: `Transaction ${transaction.id} has been updated.`,
             });
         } else {
+             const finalData = { ...data };
+            if (!finalData.customerName) {
+                finalData.customerName = finalData.companyName;
+            }
             addTransaction({
                 type: currentTransactionType,
-                ...data,
+                ...finalData,
             });
             toast({
                 title: 'Transaction Added',
@@ -128,7 +131,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     }
   };
   
-  if (!open || !currentTransactionType) {
+  if (!open) {
     return null;
   }
   
@@ -136,7 +139,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{isEditMode ? 'Edit Transaction' : `New: ${TRANSACTION_TYPES[currentTransactionType]}`}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Transaction' : `New: ${currentTransactionType ? TRANSACTION_TYPES[currentTransactionType] : ''}`}</DialogTitle>
           <DialogDescription>
             {isEditMode ? 'Modify the details of your existing transaction.' : 'Fill in the details for your new transaction.'}
           </DialogDescription>
@@ -170,7 +173,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     <FormItem>
                       <FormLabel>Customer Name</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter customer's name" {...field} />
+                        <Input placeholder="Enter customer's name (optional)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

@@ -4,7 +4,7 @@ import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
 import { PageHeader } from '@/components/shared/page-header';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
 import { ArrowDownLeft, ArrowUpRight, PlusCircle, Hash, FileDown, Pencil, Trash, ChevronDown } from 'lucide-react';
@@ -64,7 +64,6 @@ function CompanyTransactionsContent() {
     };
 
     const handleDelete = (transactionId: string) => {
-        // A confirmation dialog would be good here in a real app
         deleteTransactions([transactionId]);
         toast({ title: "Transaction deleted." });
     };
@@ -83,121 +82,110 @@ function CompanyTransactionsContent() {
             hour12: true
         }).replace(/,/g, '');
 
-        // 1. Set up headers
-        doc.setFontSize(10);
-        doc.text(formattedDate, 14, 15);
         doc.setFontSize(22);
         doc.text(`Report for ${company}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
         doc.setFontSize(10);
         doc.text(`Generated on: ${formattedDate}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
     
-        // 2. Process data
         const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
         const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
 
         const sortedTransactions = [...filteredTransactions].sort((a, b) => {
-            const nameA = a.customerName || a.companyName || 'z';
-            const nameB = b.customerName || b.companyName || 'z';
+            const nameA = a.customerName || 'z';
+            const nameB = b.customerName || 'z';
             return nameA.localeCompare(nameB);
         });
     
         sortedTransactions.forEach(tx => {
-            const customer = tx.customerName || tx.companyName || 'N/A';
             if (tx.type.includes('CREDIT')) {
+                const customer = tx.customerName || 'N/A';
                 if (!customerCredits[customer]) {
                     customerCredits[customer] = { cash: [], upi: [], total: 0 };
                 }
-                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 4) {
+                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 3) {
                     customerCredits[customer].cash.push(tx.amount);
-                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 4) {
+                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 3) {
                     customerCredits[customer].upi.push(tx.amount);
                 }
                 customerCredits[customer].total += tx.amount;
             } else if (tx.type.includes('DEBIT')) {
-                if (tx.type.includes('CASH') && debitEntries.cash.length < 4) {
+                if (tx.type.includes('CASH')) {
                     debitEntries.cash.push(tx.amount);
-                } else if (tx.type.includes('UPI') && debitEntries.upi.length < 4) {
+                } else if (tx.type.includes('UPI')) {
                     debitEntries.upi.push(tx.amount);
                 }
             }
         });
     
-        // 3. Prepare table data
         const head = [
-            [{ content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
-            ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
+            [{ content: 'NAME', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, { content: 'CASH', colSpan: 3, styles: { halign: 'center' } }, { content: 'UPI', colSpan: 3, styles: { halign: 'center' } }, { content: 'TOTAL', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }],
+            ['CASH 1ST', 'CASH 2ND', 'CASH 3RD', 'UPI 1ST', 'UPI 2ND', 'UPI 3RD']
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const row: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) row.push(data.cash[i] ? data.cash[i].toLocaleString('en-IN') : '');
-            for (let i = 0; i < 4; i++) row.push(data.upi[i] ? data.upi[i].toLocaleString('en-IN') : '');
-            row.push(data.total.toLocaleString('en-IN'));
+            for (let i = 0; i < 3; i++) row.push(data.cash[i] || '');
+            for (let i = 0; i < 3; i++) row.push(data.upi[i] || '');
+            row.push(data.total);
             return row;
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebitCash = debitEntries.cash.reduce((s, a) => s + a, 0);
-        const totalDebitUpi = debitEntries.upi.reduce((s, a) => s + a, 0);
-        const totalDebit = totalDebitCash + totalDebitUpi;
+        const totalDebit = [...debitEntries.cash, ...debitEntries.upi].reduce((s, a) => s + a, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const bodyWithTotals = [
-            ...body,
-            [
-                { content: '', colSpan: 9 },
-                { content: 'Total Credit', styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: totalCredit.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#dff0d8' } },
-            ],
-            [
-                'Entry',
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? debitEntries.cash[i].toLocaleString('en-IN') : ''),
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? debitEntries.upi[i].toLocaleString('en-IN') : ''),
-                { content: totalDebit.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#f2dede' } }
-            ],
-             [
-                { content: '', colSpan: 9 },
-                { content: 'Closing Balance', styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: closingBalance.toLocaleString('en-IN'), styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } },
-            ]
+        const footer = [
+            [{ content: 'TOTAL', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: totalCredit, styles: { fillColor: [76, 175, 80], textColor: [255,255,255], fontStyle: 'bold' } }],
+            [{ content: 'ENTRY', styles: { fontStyle: 'bold', halign: 'center' } }, { content: totalDebit, colSpan: 6, styles: { fontStyle: 'bold' } }, { content: totalDebit, styles: { fillColor: [255, 235, 59], fontStyle: 'bold' } }],
+            [{ content: 'BALANCE', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: closingBalance, styles: { fillColor: [244, 67, 54], textColor: [255,255,255], fontStyle: 'bold' } }]
         ];
 
-        // 4. Generate table
         (doc as any).autoTable({
             head: head,
-            body: bodyWithTotals,
+            body: body,
+            foot: footer,
             startY: 45,
             theme: 'grid',
             headStyles: {
-                fillColor: [220, 220, 220],
+                fillColor: [255, 192, 203], // Light pink
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center'
             },
-            styles: {
-                cellPadding: 2,
-                fontSize: 8
-            },
             columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 35 },
-                10: { halign: 'right', fontStyle: 'bold' }
+                0: { fontStyle: 'bold', cellWidth: 40, fillColor: [211,211,211] }, // Name column with grey background
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right', fontStyle: 'bold', fillColor: [76, 175, 80], textColor: [255,255,255] } // Total column with green background
             },
             didParseCell: function(data: any) {
-                // Right-align all numeric columns except the first one
-                if (data.section === 'body' && data.column.index > 0 && data.column.index < 10) {
+                 if (data.section === 'body' && data.column.index > 0 && data.column.index < 7) {
+                    if (data.cell.raw) {
+                       data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
+                    }
+                }
+                if (data.section === 'body' && data.column.index === 7) {
+                     data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
+                }
+                if (data.section === 'foot') {
+                     if (data.cell.raw) {
+                       data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
+                    }
                     data.cell.styles.halign = 'right';
                 }
-            }
+            },
         });
 
         const finalY = (doc as any).lastAutoTable.finalY;
         doc.setFontSize(10);
         doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, finalY + 10);
     
-        // 5. Save PDF
         doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
     }
-
 
     if (!company) {
         return (
@@ -309,22 +297,22 @@ function CompanyTransactionsContent() {
                     </div>
                 </CardContent>
             </Card>
-
-            <TransactionDialog
-                open={dialogOpen}
-                onOpenChange={setDialogOpen}
-                transactionType={transactionType}
-                transaction={editingTransaction}
-                defaults={{
-                    companyName: company || undefined,
-                    location: location || undefined,
-                    scope: 'company'
-                }}
-            />
+            {transactionType && (
+                <TransactionDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    transactionType={transactionType}
+                    transaction={editingTransaction}
+                    defaults={{
+                        companyName: company || undefined,
+                        location: location || undefined,
+                        scope: 'company'
+                    }}
+                />
+            )}
         </div>
     );
 }
-
 
 export default function CompanyTransactionsPage() {
     return (
