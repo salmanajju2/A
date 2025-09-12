@@ -100,21 +100,21 @@ function CompanyTransactionsContent() {
     
         const head = [
             [
-                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } }, 
-                { content: 'Cash', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } }, 
-                { content: 'UPI', colSpan: 4, styles: { halign: 'center', fillColor: '#f2f2f2' } }, 
-                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fillColor: '#f2f2f2' } }
+                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, 
+                { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, 
+                { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, 
+                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
             ],
             ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const rowData: any[] = [
-                { content: name, styles: { fillColor: '#f2f2f2' } }
+                { content: name, styles: { fontStyle: 'bold' } }
             ];
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? data.cash[i].toLocaleString('en-IN') : '', styles: { halign: 'right' } });
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? data.upi[i].toLocaleString('en-IN') : '', styles: { halign: 'right' } });
-            rowData.push({ content: data.total.toLocaleString('en-IN'), styles: { fontStyle: 'bold', halign: 'right' } });
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? formatCurrency(data.cash[i]) : '', styles: { halign: 'right' } });
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? formatCurrency(data.upi[i]) : '', styles: { halign: 'right' } });
+            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold', halign: 'right' } });
             return rowData;
         });
     
@@ -130,9 +130,9 @@ function CompanyTransactionsContent() {
         ];
         footer.push(totalCreditRow);
 
-        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#f2f2f2' } }];
+        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
         for (let i = 0; i < 8; i++) {
-            entryRow.push({content: debitEntries[i] ? debitEntries[i].toLocaleString('en-IN') : '', styles: {halign: 'right'}});
+            entryRow.push({content: debitEntries[i] ? formatCurrency(debitEntries[i]) : '', styles: {halign: 'right'}});
         }
         entryRow.push({ content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', halign: 'right' } });
         footer.push(entryRow);
@@ -159,7 +159,6 @@ function CompanyTransactionsContent() {
             },
             columnStyles: {
                 0: { fontStyle: 'bold' },
-                9: { fillColor: '#f2f2f2' }
             },
             didParseCell: function(data: any) {
                  if (data.section === 'head') {
