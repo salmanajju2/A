@@ -34,6 +34,7 @@ interface TransactionDialogProps {
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
+  customerName: z.string().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
   scope: z.enum(['global', 'company']).optional(),
@@ -53,6 +54,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
+      customerName: '',
       companyName: '',
       location: '',
       scope: 'global',
@@ -62,6 +64,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   });
 
   const isCashTransaction = currentTransactionType?.includes('CASH');
+  const isEntryTransaction = currentTransactionType === 'COMPANY_ADJUSTMENT_DEBIT';
   
   const watchedDenominations = useWatch({
     control: form.control,
@@ -72,6 +75,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     if (open) {
       const initialValues = {
         amount: 0,
+        customerName: '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
         denominations: {},
@@ -103,7 +107,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
 
         const transactionData = {
           ...data,
-          customerName: data.companyName,
         };
 
         if (isEditMode && transaction) {
@@ -164,6 +167,22 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     />
                 )}
                 
+                {!isEntryTransaction && (
+                  <FormField
+                    control={form.control}
+                    name="customerName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Customer Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter customer's name" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 <FormField
                   control={form.control}
                   name="companyName"
