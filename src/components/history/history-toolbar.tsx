@@ -95,9 +95,9 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
           new Date(transaction.timestamp).toLocaleString(),
           transaction.type,
           transaction.amount.toString(),
-          transaction.customerName,
-          transaction.companyName,
-          transaction.location,
+          transaction.customerName || '',
+          transaction.companyName || '',
+          transaction.location || '',
         ];
         tableRows.push(transactionData);
       });
