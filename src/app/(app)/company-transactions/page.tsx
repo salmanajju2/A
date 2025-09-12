@@ -88,7 +88,7 @@ function CompanyTransactionsContent() {
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
         const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[], total: number } } = {};
-        const debitEntries: number[] = [];
+        const debitEntries: (number | null)[] = Array(8).fill(null);
     
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
     
@@ -107,21 +107,27 @@ function CompanyTransactionsContent() {
                 }
                 customer.total += tx.amount;
             } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
-                debitEntries.push(tx.amount);
+                 const emptyDebitIndex = debitEntries.findIndex(d => d === null);
+                if (emptyDebitIndex !== -1) {
+                    debitEntries[emptyDebitIndex] = tx.amount;
+                }
             }
         });
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
+             const formattedCash = data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: ''}) : c);
+            const formattedUpi = data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: ''}) : u);
+
             return [
                 name,
-                ...data.cash,
-                ...data.upi,
-                data.total,
+                ...formattedCash,
+                ...formattedUpi,
+                formatCurrency(data.total, { symbol: ''}),
             ];
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
+        const totalDebit = debitEntries.reduce((sum, amount) => sum + (amount || 0), 0);
         const closingBalance = totalCredit - totalDebit;
 
         const footerContent = [];
@@ -129,21 +135,21 @@ function CompanyTransactionsContent() {
         // Total Credit Row
         footerContent.push([
             { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
-            { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
+            { content: formatCurrency(totalCredit, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
         ]);
         
         // Entry Row
         const entryRow: any[] = [
-            { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#00b050', textColor: '#000000'} }
+            { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#00b050', textColor: '#ffffff' } }
         ];
         for (let i = 0; i < 8; i++) {
             entryRow.push({
-                content: debitEntries[i] ? formatCurrency(debitEntries[i]) : '',
-                styles: { halign: 'right', fontStyle: 'bold', fillColor: '#00b050', textColor: '#000000' }
+                content: debitEntries[i] ? formatCurrency(debitEntries[i] || 0, { symbol: ''}) : '',
+                styles: { halign: 'right', fontStyle: 'bold', fillColor: '#00b050', textColor: '#ffffff' }
             });
         }
         entryRow.push({
-            content: formatCurrency(totalDebit),
+            content: formatCurrency(totalDebit, { symbol: ''}),
             styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffc7ce' }
         });
         footerContent.push(entryRow);
@@ -152,7 +158,7 @@ function CompanyTransactionsContent() {
         // Closing Balance Row
         footerContent.push([
             { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
+            { content: formatCurrency(closingBalance, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold' } }
         ]);
 
         
@@ -200,11 +206,6 @@ function CompanyTransactionsContent() {
                 7: { halign: 'right' },
                 8: { halign: 'right' },
                 9: { halign: 'right', fontStyle: 'bold' },
-            },
-             didParseCell: function (data) {
-                if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw > 0) {
-                     data.cell.text = [formatCurrency(data.cell.raw as number)];
-                }
             },
         });
     
@@ -346,7 +347,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
-
-    
