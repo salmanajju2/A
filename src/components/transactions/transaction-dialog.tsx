@@ -16,11 +16,12 @@ import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { TransactionType, DenominationCount } from '@/lib/types';
-import { TRANSACTION_TYPES } from '@/lib/constants';
+import { TRANSACTION_TYPES, COMPANY_NAMES } from '@/lib/constants';
 import { DenominationInput } from './denomination-input';
 import { useEffect } from 'react';
 import { formatCurrency } from '@/lib/helpers';
 import { ScrollArea } from '../ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 interface TransactionDialogProps {
   open: boolean;
@@ -139,9 +140,30 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                     <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
 
-                 <FormField control={form.control} name="companyName" render={({ field }) => (
-                    <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Enter company name" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                <FormField
+                  control={form.control}
+                  name="companyName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company Name</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a company" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {COMPANY_NAMES.map((company) => (
+                            <SelectItem key={company} value={company}>
+                              {company}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                  <FormField control={form.control} name="location" render={({ field }) => (
                     <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>

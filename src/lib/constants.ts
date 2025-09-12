@@ -22,6 +22,29 @@ export const TRANSACTION_TYPES = {
   ATM_WITHDRAWAL: 'ATM Withdrawal',
 } as const;
 
+export const COMPANY_NAMES = [
+  'ASHIRVAD',
+  'BELSTAR',
+  'CHOLA',
+  'CMS',
+  'DELIVERY',
+  'DIGAMBER',
+  'FINOVA',
+  'FLIPKART',
+  'FUSION',
+  'KOTAK',
+  'LNT',
+  'MEESHO',
+  'NA',
+  'ODH',
+  'SATIN',
+  'SATYA',
+  'SWABHIMAN',
+  'TVS',
+  'UJJIVAN',
+  'UNITY SMALL',
+] as const;
+
 export const LOCAL_STORAGE_KEYS = {
   USER: 'denomination-depot-user',
   TRANSACTIONS: 'denomination-depot-transactions',
