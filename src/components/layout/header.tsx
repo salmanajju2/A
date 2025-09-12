@@ -12,13 +12,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, User as UserIcon, ChevronsLeft, ChevronsRight, Home } from 'lucide-react';
+import { LogOut, LayoutDashboard, History, Landmark } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { SidebarTrigger, useSidebar } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { ThemeToggle } from '../shared/theme-toggle';
+
+const menuItems = [
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/history', label: 'History', icon: History },
+  { href: '/vault', label: 'Vault', icon: Landmark },
+];
 
 export function Header() {
   const { logout, user } = useAppContext();
@@ -33,33 +39,24 @@ export function Header() {
     router.push('/login');
   };
   
-  const breadcrumbs = pathname.split('/').filter(Boolean);
-
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
         <SidebarTrigger className={cn('md:hidden', !isMobile && 'hidden')} />
         <div className="flex-1">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link href="/dashboard" className="hover:text-foreground"><Home className="h-4 w-4" /></Link>
-                {breadcrumbs.map((crumb, index) => {
-                    const href = '/' + breadcrumbs.slice(0, index + 1).join('/');
-                    const isLast = index === breadcrumbs.length - 1;
-                    return (
-                        <React.Fragment key={href}>
-                            <span className="text-muted-foreground/50">/</span>
-                            <Link
-                                href={href}
-                                className={cn(
-                                    "capitalize",
-                                    isLast ? "text-foreground font-medium" : "hover:text-foreground"
-                                )}
-                            >
-                                {crumb.replace('-', ' ')}
-                            </Link>
-                        </React.Fragment>
-                    );
-                })}
-            </div>
+            <nav className="hidden md:flex items-center gap-4 text-sm font-medium">
+                {menuItems.map(item => (
+                    <Link
+                        key={item.href}
+                        href={item.href}
+                        className={cn(
+                            "text-muted-foreground transition-colors hover:text-foreground",
+                            pathname === item.href && "text-foreground"
+                        )}
+                    >
+                        {item.label}
+                    </Link>
+                ))}
+            </nav>
         </div>
 
       <div className="flex items-center gap-4">

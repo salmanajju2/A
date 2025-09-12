@@ -4,10 +4,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   History,
-  Building2,
-  Settings,
   Landmark,
-  Wallet,
 } from 'lucide-react';
 import {
   SidebarHeader,
@@ -34,20 +31,19 @@ export function SidebarNav() {
       <SidebarHeader>
         <Logo />
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="md:hidden">
         <SidebarMenu>
           {menuItems.map((item) => (
             <SidebarMenuItem key={item.href}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname === item.href}
-                tooltip={item.label}
-              >
-                <Link href={item.href}>
-                  <item.icon />
-                  <span>{item.label}</span>
+                <Link href={item.href} className='w-full'>
+                    <SidebarMenuButton
+                        isActive={pathname === item.href}
+                        tooltip={item.label}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
                 </Link>
-              </SidebarMenuButton>
             </SidebarMenuItem>
           ))}
         </SidebarMenu>
