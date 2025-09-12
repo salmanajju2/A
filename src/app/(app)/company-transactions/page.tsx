@@ -75,7 +75,20 @@ function CompanyTransactionsContent() {
     
     const handleDownloadPdf = () => {
         const doc = new jsPDF() as jsPDFWithAutoTable;
-        
+        const pageTitle = `Report for ${company} ${location || ''}`.trim();
+        const generatedDate = `Generated on: ${new Date().toLocaleString('en-IN', { dateStyle: 'short', timeStyle: 'medium' })}`;
+
+        // Add main title
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+
+        // Add subtitle
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(generatedDate, doc.internal.pageSize.getWidth() / 2, 30, { align: 'center' });
+
+
         const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[] } } = {};
 
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
@@ -83,79 +96,86 @@ function CompanyTransactionsContent() {
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    customerCredits[tx.customerName] = { cash: ['', '', ''], upi: ['', '', ''] };
+                    customerCredits[tx.customerName] = { cash: ['', '', '', ''], upi: ['', '', '', ''] };
                 }
                 const customer = customerCredits[tx.customerName];
-                if (tx.type === 'CASH_CREDIT') {
-                    const emptyIndex = customer.cash.findIndex(c => c === '');
-                    if (emptyIndex !== -1) customer.cash[emptyIndex] = tx.amount;
-                } else if (tx.type === 'UPI_CREDIT') {
-                    const emptyIndex = customer.upi.findIndex(c => c === '');
-                    if (emptyIndex !== -1) customer.upi[emptyIndex] = tx.amount;
+                const slots = tx.type === 'CASH_CREDIT' ? customer.cash : customer.upi;
+                const emptyIndex = slots.findIndex(c => c === '');
+                if (emptyIndex !== -1) {
+                    slots[emptyIndex] = tx.amount;
                 }
             }
         });
 
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const total = [...data.cash, ...data.upi].reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
-            return [name, ...data.cash, ...data.upi, total];
+            const formattedCash = data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: '₹' }) : c);
+            const formattedUpi = data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: '₹' }) : u);
+            return [name, ...formattedCash, ...formattedUpi, formatCurrency(total, { symbol: '₹' })];
         });
 
-        const totalCredit = body.reduce((sum, row) => sum + (row[row.length - 1] as number), 0);
-        const totalDebit = filteredTransactions
-            .filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT')
-            .reduce((sum, tx) => sum + tx.amount, 0);
+        const totalCredit = body.reduce((sum, row) => {
+            const totalString = (row[row.length - 1] as string).replace(/[₹,]/g, '');
+            return sum + parseFloat(totalString);
+        }, 0);
+
+        const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
+        const entryAmounts = [0, 0, 0, 0];
+        entryTransactions.forEach(tx => {
+            // This is a simplification; in a real scenario you'd need to know which "slot" the entry belongs to.
+            // For now, we'll just put them in the first available slots.
+            const emptyIndex = entryAmounts.findIndex(a => a === 0);
+            if (emptyIndex !== -1) {
+                entryAmounts[emptyIndex] = tx.amount;
+            }
+        });
+        const totalDebit = entryAmounts.reduce((sum, amount) => sum + amount, 0);
+
         const closingBalance = totalCredit - totalDebit;
 
         autoTable(doc, {
-            head: [[
-                'NAME',
-                'CASH 1ST',
-                'CASH 2ND',
-                'CASH 3RD',
-                'UPI 1ST',
-                'UPI 2ND',
-                'UPI 3RD',
-                'TOTAL',
-            ]],
+            startY: 40,
+            head: [
+                [
+                    { content: 'Customer Name', rowSpan: 2, styles: { fontStyle: 'bold', halign: 'center', valign: 'middle' } },
+                    { content: 'Cash', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } },
+                    { content: 'UPI', colSpan: 4, styles: { fontStyle: 'bold', halign: 'center' } },
+                    { content: 'Total Credit', rowSpan: 2, styles: { fontStyle: 'bold', halign: 'center', valign: 'middle' } },
+                ],
+                ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
+            ],
             body: body,
             foot: [
                 [
-                    { content: 'TOTAL', styles: { fontStyle: 'bold', halign: 'center' } },
-                    '', '', '', '', '', '',
-                    { content: totalCredit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#008000' } }
+                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fillColor: '#e6f7ec', fontStyle: 'bold', halign: 'right' } }
                 ],
                 [
-                    { content: 'ENTRY', styles: { fontStyle: 'bold', halign: 'center' } },
-                    '',
-                    { content: totalDebit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#FF0000' } },
-                    '', '', '', '',
-                    { content: totalDebit, styles: { fontStyle: 'bold', halign: 'right', textColor: '#FF0000' } }
+                    { content: 'Entry', styles: { fontStyle: 'bold' } },
+                    ...entryAmounts.map(amt => amt > 0 ? { content: formatCurrency(amt, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } } : ''),
+                     '', '', '', '', // Empty cells for UPI
+                    { content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fillColor: '#ffe6e6', fontStyle: 'bold', halign: 'right' } }
                 ],
                 [
-                    { content: 'BALANCE', styles: { fontStyle: 'bold', halign: 'center' } },
-                     '', '', '', '', '', '',
-                    { content: closingBalance, styles: { fontStyle: 'bold', halign: 'right' } }
+                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                    { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fillColor: '#ffe6e6', fontStyle: 'bold', halign: 'right' } }
                 ]
             ],
             theme: 'grid',
+            styles: {
+                font: 'helvetica',
+                fontStyle: 'bold', // Make all text bold
+                lineWidth: 0.1,
+                lineColor: [0, 0, 0],
+            },
             headStyles: {
                 fillColor: '#FFFFFF',
-                textColor: '#C00000',
-                fontStyle: 'bold',
+                textColor: '#000000',
                 halign: 'center',
-                lineColor: [0, 0, 0],
-                lineWidth: 0.1,
-            },
-            bodyStyles: {
-                lineColor: [0, 0, 0],
-                lineWidth: 0.1,
             },
             footStyles: {
                 fillColor: '#FFFFFF',
                 textColor: '#000000',
-                lineColor: [0, 0, 0],
-                lineWidth: 0.1,
             },
             columnStyles: {
                 0: { halign: 'left' },
@@ -166,18 +186,13 @@ function CompanyTransactionsContent() {
                 5: { halign: 'right' },
                 6: { halign: 'right' },
                 7: { halign: 'right' },
+                8: { halign: 'right' },
+                9: { halign: 'right' },
             },
-            didParseCell: (data) => {
-                // For empty cells in body, make sure they are empty strings
-                if (data.section === 'body' && data.cell.raw === '') {
-                    data.cell.text = [''];
-                }
-                 // For number cells in body and foot, format them
-                if (data.section === 'body' || data.section === 'foot') {
-                    if (typeof data.cell.raw === 'number') {
-                         data.cell.text = [data.cell.raw.toLocaleString('en-IN')];
-                    }
-                }
+            didDrawCell: (data) => {
+                 if (data.row.section === 'head' || data.column.dataKey === 0) {
+                     data.cell.styles.fillColor = '#f2f2f2';
+                 }
             }
         });
     
