@@ -31,6 +31,8 @@ export interface Transaction {
   atmId?: string;
   partnerBankUTR?: string;
   customerName?: string;
+  companyName?: string;
+  location?: string;
   upiTransactionId?: string;
   recordedBy: string;
 }

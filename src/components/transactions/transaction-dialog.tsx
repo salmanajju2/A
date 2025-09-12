@@ -36,6 +36,8 @@ const formSchema = z.object({
   atmId: z.string().optional(),
   partnerBankUTR: z.string().optional(),
   customerName: z.string().optional(),
+  companyName: z.string().optional(),
+  location: z.string().optional(),
   upiTransactionId: z.string().optional(),
 });
 
@@ -54,6 +56,8 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
       atmId: '',
       partnerBankUTR: '',
       customerName: '',
+      companyName: '',
+      location: '',
       upiTransactionId: '',
     },
   });
@@ -110,10 +114,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             
-            <FormField control={form.control} name="customerName" render={({ field }) => (
-                <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
-            )}/>
-
             {isCashTransaction ? (
                 <DenominationInput form={form} />
             ) : (
@@ -133,11 +133,23 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
             )}
             
             {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
-                <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} /></FormControl><FormMessage /></FormItem>
             )}/>}
 
+            <FormField control={form.control} name="customerName" render={({ field }) => (
+                <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+
+             <FormField control={form.control} name="companyName" render={({ field }) => (
+                <FormItem><FormLabel>Company Name</FormLabel><FormControl><Input placeholder="Enter company name" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+
+             <FormField control={form.control} name="location" render={({ field }) => (
+                <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>
+            )}/>
+
             <FormField control={form.control} name="description" render={({ field }) => (
-                <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea placeholder="Add a description or any notes..." {...field} /></FormControl><FormMessage /></FormItem>
             )}/>
             
             <FormItem>

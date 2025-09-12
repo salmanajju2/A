@@ -65,4 +65,12 @@ export const columns: ColumnDef<Transaction>[] = [
     accessorKey: 'customerName',
     header: 'Customer',
   },
+  {
+    accessorKey: 'companyName',
+    header: 'Company',
+  },
+  {
+    accessorKey: 'location',
+    header: 'Location',
+  },
 ];
