@@ -134,23 +134,23 @@ function CompanyTransactionsContent() {
 
         // Total Credit Row
         footerContent.push([
-            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
-            { content: formatCurrency(totalCredit, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
+            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: formatCurrency(totalCredit, { symbol: ''}), styles: { halign: 'right', fontStyle: 'bold' } }
         ]);
         
         // Entry Row
         const entryRow: any[] = [
-            { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#00b050', textColor: '#ffffff' } }
+            { content: 'Entry', styles: { fontStyle: 'bold' } }
         ];
         for (let i = 0; i < 8; i++) {
             entryRow.push({
                 content: debitEntries[i] ? formatCurrency(debitEntries[i] || 0, { symbol: ''}) : '',
-                styles: { halign: 'right', fontStyle: 'bold', fillColor: '#00b050', textColor: '#ffffff' }
+                styles: { halign: 'right', fontStyle: 'bold' }
             });
         }
         entryRow.push({
             content: formatCurrency(totalDebit, { symbol: ''}),
-            styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffc7ce' }
+            styles: { halign: 'right', fontStyle: 'bold' }
         });
         footerContent.push(entryRow);
 
