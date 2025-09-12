@@ -13,7 +13,7 @@ import { Trash, FileDown, Download } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import 'jspdf-autotable';
 
 
 interface HistoryToolbarProps {
@@ -102,7 +102,7 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
         tableRows.push(transactionData);
       });
   
-      autoTable(doc, {
+      (doc as any).autoTable({
         head: [tableColumn],
         body: tableRows,
         startY: 20,
