@@ -101,7 +101,6 @@ function CompanyTransactionsContent() {
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    // 3 slots for cash, 3 for upi
                     customerCredits[tx.customerName] = { cash: ['', '', ''], upi: ['', '', ''] };
                 }
                 const customer = customerCredits[tx.customerName];
@@ -134,8 +133,7 @@ function CompanyTransactionsContent() {
                     i === 0 ? total : ''
                 ]);
             }
-            // Handle case where a customer might have more than one transaction type, this combines them under one name.
-            // Simplified: just taking the first one for now
+
             if(rows.length > 1){
                  const combinedRow = rows.reduce((acc, row, index) => {
                     if (index === 0) return row;
@@ -147,7 +145,6 @@ function CompanyTransactionsContent() {
                 const total = allCash.concat(allUpi).reduce((sum: number, val) => sum + (Number(val) || 0), 0);
                 combinedRow[7] = total;
                 return [combinedRow.map(c => c === 0 ? '' : c)];
-
             }
 
             return rows;
@@ -170,21 +167,20 @@ function CompanyTransactionsContent() {
             [
                 { content: 'TOTAL', styles: { fontStyle: 'bold' } },
                 '', '', '', '', '', '',
-                { content: totalCredit, styles: { fontStyle: 'bold', textColor: [0, 128, 0] } } // Green
+                { content: formatCurrency(totalCredit, {symbol: ''}), styles: { fontStyle: 'bold' } }
             ],
             [
                 { content: 'ENTRY', styles: { fontStyle: 'bold' } },
-                { content: totalDebit, styles: { fontStyle: 'bold', textColor: [255, 0, 0] } }, // Red
+                { content: formatCurrency(totalDebit, {symbol: ''}), styles: { fontStyle: 'bold' } },
                 '', '', '', '', '',
-                { content: totalDebit, styles: { fontStyle: 'bold', textColor: [255, 0, 0] } } // Red
+                { content: formatCurrency(totalDebit, {symbol: ''}), styles: { fontStyle: 'bold' } }
             ],
             [
                 { content: 'BALANCE', styles: { fontStyle: 'bold' } },
                 '', '', '', '', '', '',
-                { content: closingBalance, styles: { fontStyle: 'bold', textColor: closingBalance < 0 ? [255, 0, 0] : [0,0,0] } } // Red for negative
+                { content: formatCurrency(closingBalance, {symbol: ''}), styles: { fontStyle: 'bold' } }
             ]
         ];
-
 
         autoTable(doc, {
             startY: 40,
@@ -207,6 +203,7 @@ function CompanyTransactionsContent() {
             footStyles: {
                 fontStyle: 'bold',
                 halign: 'right',
+                textColor: [0,0,0]
             },
             columnStyles: {
                 0: { halign: 'left' },
@@ -220,6 +217,7 @@ function CompanyTransactionsContent() {
             },
             didParseCell: (data) => {
                  data.cell.styles.fontStyle = 'bold';
+                 data.cell.styles.textColor = [0,0,0];
                  if (data.row.section === 'head' && data.cell.raw) {
                      data.cell.styles.halign = 'center';
                  }
