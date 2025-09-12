@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { TransactionDialog } from '@/components/transactions/transaction-dialog';
+import { TRANSACTION_TYPES } from '@/lib/constants';
 
 function CompanyTransactionsContent() {
     const router = useRouter();
@@ -108,7 +109,7 @@ function CompanyTransactionsContent() {
                                             {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                         </div>
                                         <div>
-                                            <p className="font-medium">{tx.customerName || 'N/A'}</p>
+                                            <p className="font-medium">{`ye paymrt credit ho naki denit`}</p>
                                             <p className="text-sm text-muted-foreground">{formatDate(new Date(tx.timestamp))}</p>
                                         </div>
                                     </div>
