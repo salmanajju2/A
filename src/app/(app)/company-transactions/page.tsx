@@ -79,19 +79,12 @@ function CompanyTransactionsContent() {
         const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
         const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
         
-        const blackColor = '#000000';
-        const greyColor = '#f2f2f2';
-        const greenColor = '#008000';
-        const redColor = '#ff0000';
-
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(blackColor);
         doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
     
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(blackColor);
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
         const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
@@ -117,11 +110,11 @@ function CompanyTransactionsContent() {
         });
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const row: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) row.push(data.cash[i] || '');
-            for (let i = 0; i < 4; i++) row.push(data.upi[i] || '');
-            row.push(data.total);
-            return row;
+            const rowData: (string | number)[] = [name];
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
+            rowData.push(data.total);
+            return rowData.map(cell => (typeof cell === 'number' ? formatCurrency(cell, { symbol: '' }) : cell));
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
@@ -129,19 +122,20 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
 
         const footerRows = [
-             {
-                '1': { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                '2': { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', textColor: greenColor } }
-            },
-            {
-                '1': { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...Object.fromEntries(debitEntries.slice(0, 8).map((amt, i) => [i + 2, { content: formatCurrency(amt, {symbol: ''}), styles: { halign: 'right' } }])),
-                '10': { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } }
-            },
-            {
-                '1': { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                '2': { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', textColor: closingBalance >= 0 ? greenColor : redColor } }
-            }
+            [
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e6ffed' } },
+                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e6ffed' } }
+            ],
+            [
+                { content: 'Entry', styles: { fontStyle: 'bold' } },
+                ...debitEntries.slice(0,8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' }})),
+                ...Array(Math.max(0, 8 - debitEntries.length)).fill({ content: '', styles: { halign: 'right' } }),
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffe6e6' } }
+            ],
+            [
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e6ffed' : '#ffe6e6' } },
+                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e6ffed' : '#ffe6e6' } }
+            ]
         ];
         
         doc.autoTable({
@@ -159,21 +153,17 @@ function CompanyTransactionsContent() {
             startY: 35,
             theme: 'grid',
             headStyles: {
-                fillColor: greyColor,
-                textColor: blackColor,
+                fillColor: '#f2f2f2',
+                textColor: '#000000',
                 fontStyle: 'bold',
             },
-            footStyles: {
-                fillColor: false,
-                textColor: blackColor,
-                fontStyle: 'bold'
-            },
             styles: {
-                textColor: blackColor,
-                lineColor: [200, 200, 200],
+                textColor: '#000000',
+                lineColor: [0, 0, 0],
+                lineWidth: 0.1
             },
             columnStyles: {
-                0: { fontStyle: 'bold', fillColor: greyColor },
+                0: { fontStyle: 'bold', fillColor: '#f2f2f2' },
                 1: { halign: 'right' },
                 2: { halign: 'right' },
                 3: { halign: 'right' },
@@ -183,14 +173,6 @@ function CompanyTransactionsContent() {
                 7: { halign: 'right' },
                 8: { halign: 'right' },
                 9: { halign: 'right', fontStyle: 'bold' },
-            },
-             didParseCell: function(data) {
-                if (data.row.section === 'body' && typeof data.cell.raw === 'number' && data.column.dataKey !== 0) {
-                     data.cell.text = [formatCurrency(data.cell.raw, { symbol: '' })];
-                }
-                 if (data.row.section === 'body' && data.column.dataKey === 9 && typeof data.cell.raw === 'number') {
-                     data.cell.text = [formatCurrency(data.cell.raw)];
-                 }
             },
         });
     
@@ -332,3 +314,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
