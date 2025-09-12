@@ -1,12 +1,12 @@
 'use client';
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { TransactionCard } from '@/components/history/transaction-card';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { HistoryToolbar } from '@/components/history/history-toolbar';
 import type { Transaction } from '@/lib/types';
 
-export default function HistoryPage() {
+function HistoryPageContent() {
     const { transactions } = useAppContext();
     const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(transactions);
     const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
@@ -58,4 +58,12 @@ export default function HistoryPage() {
             )}
         </div>
     );
+}
+
+export default function HistoryPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <HistoryPageContent />
+        </Suspense>
+    )
 }

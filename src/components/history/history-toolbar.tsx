@@ -1,12 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
-import type { Transaction, TransactionType } from '@/lib/types';
+import type { Transaction } from '@/lib/types';
 import { Button } from '../ui/button';
 import { Trash, FileDown, Download } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
@@ -25,9 +26,10 @@ interface HistoryToolbarProps {
 }
 
 export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCount, onToggleAll, selectedIds }: HistoryToolbarProps) {
+  const searchParams = useSearchParams();
   const [typeFilter, setTypeFilter] = useState<string>('all');
-  const [companyFilter, setCompanyFilter] = useState<string>('all');
-  const [locationFilter, setLocationFilter] = useState<string>('all');
+  const [companyFilter, setCompanyFilter] = useState<string>(searchParams.get('company') || 'all');
+  const [locationFilter, setLocationFilter] = useState<string>(searchParams.get('location') || 'all');
   const { deleteTransactions } = useAppContext();
   const { toast } = useToast();
 

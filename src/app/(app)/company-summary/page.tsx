@@ -2,24 +2,28 @@
 import { useMemo, useState } from 'react';
 import { useAppContext } from '@/context/app-context';
 import { PageHeader } from '@/components/shared/page-header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/helpers';
 import type { Transaction } from '@/lib/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LOCATIONS } from '@/lib/constants';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LOCATIONS, COMPANY_NAMES } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useRouter } from 'next/navigation';
 
 interface CompanySummary {
   credit: number;
   debit: number;
   net: number;
   transactionCount: number;
+  companyName: string;
+  location?: string;
 }
 
 export default function CompanySummaryPage() {
   const { transactions } = useAppContext();
   const [locationFilter, setLocationFilter] = useState('all');
+  const router = useRouter();
 
   const companySummaries = useMemo(() => {
     const summaries: Record<string, CompanySummary> = {};
@@ -29,10 +33,17 @@ export default function CompanySummaryPage() {
     );
 
     filteredTransactions.forEach((tx) => {
-      const companyKey = `${tx.companyName || 'NA'} ${tx.location || ''}`.trim();
+      const companyKey = `${tx.companyName || 'NA'}|${tx.location || 'all'}`;
 
       if (!summaries[companyKey]) {
-        summaries[companyKey] = { credit: 0, debit: 0, net: 0, transactionCount: 0 };
+        summaries[companyKey] = { 
+          credit: 0, 
+          debit: 0, 
+          net: 0, 
+          transactionCount: 0,
+          companyName: tx.companyName || 'NA',
+          location: tx.location
+        };
       }
 
       if (tx.type.includes('CREDIT')) {
@@ -44,14 +55,27 @@ export default function CompanySummaryPage() {
       summaries[companyKey].transactionCount++;
     });
 
-    return Object.entries(summaries).sort((a, b) => a[0].localeCompare(b[0]));
+    return Object.entries(summaries).sort((a, b) => {
+        const nameA = `${a[1].companyName} ${a[1].location || ''}`.trim();
+        const nameB = `${b[1].companyName} ${b[1].location || ''}`.trim();
+        return nameA.localeCompare(nameB);
+    });
   }, [transactions, locationFilter]);
+
+  const handleRowClick = (summary: CompanySummary) => {
+    const params = new URLSearchParams();
+    params.set('company', summary.companyName);
+    if(summary.location) {
+        params.set('location', summary.location);
+    }
+    router.push(`/history?${params.toString()}`);
+  }
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Global Company Balances"
-        description="A combined summary of all transactions."
+        description="A combined summary of all transactions. Click a row to view details."
       />
       
       <Card>
@@ -78,9 +102,9 @@ export default function CompanySummaryPage() {
               <TableBody>
                 {companySummaries.length > 0 ? (
                   companySummaries.map(([companyKey, summary]) => (
-                    <TableRow key={companyKey}>
+                    <TableRow key={companyKey} onClick={() => handleRowClick(summary)} className="cursor-pointer">
                       <TableCell>
-                        <div className="font-medium">{companyKey}</div>
+                        <div className="font-medium">{`${summary.companyName} ${summary.location || ''}`.trim()}</div>
                         <div className="text-sm text-muted-foreground">({summary.transactionCount} transactions)</div>
                       </TableCell>
                       <TableCell className="text-right text-green-600">{formatCurrency(summary.credit)}</TableCell>
