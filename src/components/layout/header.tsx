@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, LayoutDashboard, History, Landmark, Menu } from 'lucide-react';
+import { LayoutDashboard, History, Landmark, Menu } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -28,17 +28,11 @@ const menuItems = [
 ];
 
 export function Header() {
-  const { logout, user } = useAppContext();
-  const router = useRouter();
+  const { user } = useAppContext();
   const pathname = usePathname();
   
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
 
-  const handleLogout = () => {
-    logout();
-    router.push('/login');
-  };
-  
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
@@ -117,11 +111,6 @@ export function Header() {
                 </p>
               </div>
             </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" />
-              <span>Log out</span>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
