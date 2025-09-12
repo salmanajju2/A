@@ -33,6 +33,7 @@ interface TransactionDialogProps {
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
+  customerName: z.string().optional(),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
@@ -53,6 +54,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
+      customerName: '',
       companyName: '',
       location: '',
       scope: 'global',
@@ -62,7 +64,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   });
 
   const isCashTransaction = currentTransactionType?.includes('CASH');
-
+  
   const watchedDenominations = useWatch({
     control: form.control,
     name: "denominations",
@@ -72,6 +74,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     if (open) {
       const initialValues = {
         amount: 0,
+        customerName: '',
         companyName: defaults?.companyName || '',
         location: defaults?.location || '',
         denominations: {},
@@ -127,6 +130,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
 
   if (!open || !currentTransactionType) {
     if (open && !currentTransactionType) {
+      // This is now safe to do, because we check `open` first.
       console.error("TransactionDialog: No transaction type provided.");
     }
     return null;
