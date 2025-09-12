@@ -35,6 +35,8 @@ export interface Transaction {
   recordedBy: string;
 }
 
+export type TransactionUpdatePayload = Omit<Transaction, 'id' | 'timestamp' | 'recordedBy' | 'type'>
+
 export interface User {
   id: string;
   email: string;

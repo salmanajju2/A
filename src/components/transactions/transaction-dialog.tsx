@@ -15,7 +15,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
-import type { TransactionType, DenominationCount } from '@/lib/types';
+import type { TransactionType, DenominationCount, Transaction } from '@/lib/types';
 import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import { DenominationInput } from './denomination-input';
 import { useEffect } from 'react';
@@ -26,15 +26,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 interface TransactionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  transactionType: TransactionType;
+  transactionType?: TransactionType;
+  transaction?: Transaction | null;
 }
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
-  accountId: z.string().optional(),
-  atmId: z.string().optional(),
-  partnerBankUTR: z.string().optional(),
   customerName: z.string().optional(),
   companyName: z.string().optional(),
   location: z.string().optional(),
@@ -43,17 +41,23 @@ const formSchema = z.object({
 
 type TransactionFormValues = z.infer<typeof formSchema>;
 
-export function TransactionDialog({ open, onOpenChange, transactionType }: TransactionDialogProps) {
-  const { addTransaction, user } = useAppContext();
+export function TransactionDialog({ open, onOpenChange, transactionType, transaction }: TransactionDialogProps) {
+  const { addTransaction, updateTransaction } = useAppContext();
   const { toast } = useToast();
+  
+  const isEditMode = !!transaction;
+  const currentTransactionType = transaction?.type || transactionType;
+  
+  if (!currentTransactionType) {
+    // This should not happen if the dialog is opened correctly
+    console.error("TransactionDialog: No transaction type provided.");
+    return null;
+  }
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      accountId: '',
-      atmId: '',
-      partnerBankUTR: '',
       customerName: '',
       companyName: '',
       location: '',
@@ -61,7 +65,30 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
     },
   });
 
-  const isCashTransaction = transactionType.includes('CASH');
+  useEffect(() => {
+    if (transaction) {
+      form.reset({
+        amount: transaction.amount,
+        customerName: transaction.customerName,
+        companyName: transaction.companyName,
+        location: transaction.location,
+        upiTransactionId: transaction.upiTransactionId,
+        denominations: transaction.denominations
+      });
+    } else {
+      form.reset({
+        amount: 0,
+        customerName: '',
+        companyName: '',
+        location: '',
+        upiTransactionId: '',
+        denominations: {}
+      });
+    }
+  }, [transaction, form]);
+
+
+  const isCashTransaction = currentTransactionType.includes('CASH');
 
   const watchedDenominations = useWatch({
     control: form.control,
@@ -86,15 +113,23 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
             return;
         }
 
-        addTransaction({
-            type: transactionType,
-            ...data,
-        });
-        toast({
-            title: 'Transaction Added',
-            description: `${TRANSACTION_TYPES[transactionType]} of ${formatCurrency(data.amount)} recorded.`,
-        });
-        form.reset();
+        if (isEditMode && transaction) {
+            updateTransaction(transaction.id, data);
+            toast({
+                title: 'Transaction Updated',
+                description: `Transaction ${transaction.id} has been updated.`,
+            });
+        } else {
+            addTransaction({
+                type: currentTransactionType,
+                ...data,
+            });
+            toast({
+                title: 'Transaction Added',
+                description: `${TRANSACTION_TYPES[currentTransactionType]} of ${formatCurrency(data.amount)} recorded.`,
+            });
+        }
+        
         onOpenChange(false);
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
@@ -105,9 +140,9 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Transaction: {TRANSACTION_TYPES[transactionType]}</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Transaction' : `New: ${TRANSACTION_TYPES[currentTransactionType]}`}</DialogTitle>
           <DialogDescription>
-            Fill in the details for your new transaction.
+            {isEditMode ? 'Modify the details of your existing transaction.' : 'Fill in the details for your new transaction.'}
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
@@ -133,11 +168,11 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                 )}
                 
                 {!isCashTransaction && <FormField control={form.control} name="upiTransactionId" render={({ field }) => (
-                    <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>UPI ID</FormLabel><FormControl><Input placeholder="Enter UPI Transaction ID" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                 )}/>}
 
                 <FormField control={form.control} name="customerName" render={({ field }) => (
-                    <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel>Customer Name</FormLabel><FormControl><Input placeholder="Enter customer's name" {...field} value={field.value || ''} /></FormControl><FormMessage /></FormItem>
                 )}/>
 
                 <FormField
@@ -146,7 +181,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a company" />
@@ -171,7 +206,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Location</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a location" />
@@ -194,7 +229,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
             </ScrollArea>
             <DialogFooter className="pt-4">
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit">Add Transaction</Button>
+              <Button type="submit">{isEditMode ? 'Save Changes' : 'Add Transaction'}</Button>
             </DialogFooter>
           </form>
         </Form>

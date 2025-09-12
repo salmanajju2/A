@@ -3,7 +3,7 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
-import type { User, Transaction, DenominationVault, DenominationCount } from '@/lib/types';
+import type { User, Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload } from '@/lib/types';
 import { DENOMINATIONS } from '@/lib/constants';
 import { initialTransactions, initialVault } from '@/lib/initial-data';
 
@@ -19,6 +19,7 @@ const defaultUser: User = { id: '1', email: 'user@example.com', name: 'Ali Enter
 
 type AppContextType = AppState & {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => void;
+  updateTransaction: (transactionId: string, updates: TransactionUpdatePayload) => void;
   updateVault: (newVault: DenominationVault) => void;
   deleteTransactions: (transactionIds: string[]) => void;
 };
@@ -78,16 +79,16 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTransactions = [newTransaction, ...state.transactions];
     setTransactions(newTransactions);
 
-    // Update vault
+    // This is a simplified vault update. For production, you'd want a more robust, atomic update mechanism.
     const newVault = JSON.parse(JSON.stringify(state.vault));
     if (newTransaction.type.includes('CASH')) {
       const denominations = newTransaction.denominations || {};
       for (const key in denominations) {
         const denominationKey = key as keyof DenominationCount;
         if(newTransaction.type === 'CASH_CREDIT') {
-          newVault.denominations[denominationKey] += denominations[denominationKey] || 0;
+          newVault.denominations[denominationKey] = (newVault.denominations[denominationKey] || 0) + (denominations[denominationKey] || 0);
         } else { // CASH_DEBIT
-          newVault.denominations[denominationKey] -= denominations[denominationKey] || 0;
+          newVault.denominations[denominationKey] = (newVault.denominations[denominationKey] || 0) - (denominations[denominationKey] || 0);
         }
       }
     }
@@ -99,6 +100,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         }
     }
     setVault(newVault);
+  };
+  
+  const updateTransaction = (transactionId: string, updates: TransactionUpdatePayload) => {
+    // Note: This is a simplified update. It does not recalculate vault balances for simplicity.
+    // A more robust solution would re-calculate balances or handle the diff.
+    const newTransactions = state.transactions.map(tx => 
+      tx.id === transactionId ? { ...tx, ...updates } : tx
+    );
+    setTransactions(newTransactions);
   };
   
   const updateVault = (newVault: DenominationVault) => {
@@ -114,6 +124,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const contextValue = useMemo(() => ({
     ...state,
     addTransaction,
+    updateTransaction,
     updateVault,
     deleteTransactions,
   // eslint-disable-next-line react-hooks/exhaustive-deps

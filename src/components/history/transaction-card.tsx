@@ -24,8 +24,9 @@ import type { Transaction } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
-import { DENOMINATIONS } from '@/lib/constants';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
+import { DenominationBreakdown } from './denomination-breakdown';
+import { TransactionDialog } from '../transactions/transaction-dialog';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -36,10 +37,9 @@ interface TransactionCardProps {
 export function TransactionCard({ transaction, isSelected, onSelect }: TransactionCardProps) {
   const { deleteTransactions } = useAppContext();
   const { toast } = useToast();
-  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const isCredit = transaction.type.includes('CREDIT');
-  const isCash = transaction.type.includes('CASH');
 
   const handleDelete = () => {
     deleteTransactions([transaction.id]);
@@ -48,6 +48,7 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
 
   return (
     <Collapsible asChild>
+      <>
         <Card className="w-full">
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
                 <div className="flex items-center gap-4">
@@ -82,43 +83,26 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
             </CardHeader>
             <CollapsibleContent>
                 <CardContent className="p-4 space-y-4">
-                    <div className="space-y-2 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                         <InfoLine icon={Hash} label="ID" value={transaction.id} />
                         <InfoLine icon={User} label="Customer" value={transaction.customerName} />
                         <InfoLine icon={Building} label="Company" value={transaction.companyName} />
                         <InfoLine icon={MapPin} label="Location" value={transaction.location} />
+                        {transaction.upiTransactionId && <InfoLine icon={Hash} label="UPI ID" value={transaction.upiTransactionId} />}
                     </div>
 
-                    {isCash && transaction.denominations && (
-                        <div>
-                            <h4 className="font-semibold mb-2">Cash Denomination Breakdown:</h4>
-                            <ul className="list-disc list-inside space-y-1 text-sm">
-                                {DENOMINATIONS.map(denom => {
-                                    const count = transaction.denominations?.[`d${denom.value}` as keyof typeof transaction.denominations] || 0;
-                                    if (count > 0) {
-                                        return (
-                                            <li key={denom.value}>
-                                                {denom.label}: {count} notes ({formatCurrency(count * denom.value)})
-                                            </li>
-                                        )
-                                    }
-                                    return null;
-                                })}
-                            </ul>
-                            <p className="font-semibold mt-2 text-sm">Total Cash Value: {formatCurrency(transaction.amount)}</p>
-                        </div>
-                    )}
+                    <DenominationBreakdown denominations={transaction.denominations} />
                 </CardContent>
             </CollapsibleContent>
             <CardFooter className="p-4 flex justify-between">
                 <CollapsibleTrigger asChild>
                      <Button variant="ghost" size="sm">
-                        View Details
-                        <ChevronDown className="h-4 w-4 ml-2 transition-transform data-[state=open]:rotate-180" />
+                        <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
+                        Details
                     </Button>
                 </CollapsibleTrigger>
                 <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
                     </Button>
@@ -129,6 +113,13 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                 </div>
             </CardFooter>
         </Card>
+        
+        <TransactionDialog 
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          transaction={transaction}
+        />
+      </>
     </Collapsible>
   );
 }
@@ -138,9 +129,11 @@ function InfoLine({ icon: Icon, label, value }: { icon: React.ElementType, label
     if (!value) return null;
     return (
         <div className="flex items-start">
-            <Icon className="h-4 w-4 mt-0.5 mr-3 text-muted-foreground" />
-            <span className="font-semibold w-24">{label}:</span>
-            <span className="flex-1 break-words">{value}</span>
+            <Icon className="h-4 w-4 mt-0.5 mr-3 text-muted-foreground flex-shrink-0" />
+            <div className='flex flex-col'>
+              <span className="font-semibold">{label}</span>
+              <span className="break-words">{value}</span>
+            </div>
         </div>
     )
 }
