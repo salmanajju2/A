@@ -34,7 +34,10 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
   const { toast } = useToast();
 
   useEffect(() => {
-    const filtered = transactions.filter(t => {
+    // Only show global transactions on the main history page
+    const globalTransactions = transactions.filter(t => t.scope !== 'company');
+    
+    const filtered = globalTransactions.filter(t => {
       const typeMatch = typeFilter === 'all' || t.type === typeFilter;
       const companyMatch = companyFilter === 'all' || t.companyName === companyFilter;
       const locationMatch = locationFilter === 'all' || t.location === locationFilter;
@@ -128,7 +131,7 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
           <Select value={companyFilter} onValueChange={setCompanyFilter}>
             <SelectTrigger>
               <SelectValue placeholder="All Companies" />
-            </SelectTrigger>
+            </Trigger>
             <SelectContent>
               <SelectItem value="all">All Companies</SelectItem>
               {COMPANY_NAMES.map(name => (
@@ -139,7 +142,7 @@ export function HistoryToolbar({ transactions, onFilter, selectedCount, totalCou
           <Select value={locationFilter} onValueChange={setLocationFilter}>
             <SelectTrigger>
               <SelectValue placeholder="All Locations" />
-            </SelectTrigger>
+            </Trigger>
             <SelectContent>
               <SelectItem value="all">All Locations</SelectItem>
               {LOCATIONS.map(loc => (

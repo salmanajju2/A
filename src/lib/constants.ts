@@ -19,6 +19,7 @@ export const TRANSACTION_TYPES = {
   UPI_DEBIT: 'UPI Debit',
   BANK_DEPOSIT: 'Bank Deposit',
   ATM_WITHDRAWAL: 'ATM Withdrawal',
+  COMPANY_ADJUSTMENT_DEBIT: 'Company Adjustment (Debit)',
 } as const;
 
 export const COMPANY_NAMES = [

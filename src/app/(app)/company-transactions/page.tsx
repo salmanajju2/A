@@ -1,27 +1,36 @@
 'use client';
 
-import { Suspense, useMemo } from 'react';
+import { Suspense, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import type { Transaction } from '@/lib/types';
+import type { Transaction, TransactionType } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, PlusCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { TransactionDialog } from '@/components/transactions/transaction-dialog';
 
 function CompanyTransactionsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const { transactions } = useAppContext();
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [transactionType, setTransactionType] = useState<TransactionType | null>(null);
     
     const company = searchParams.get('company');
     const location = searchParams.get('location');
 
+    const handleOpenDialog = (type: TransactionType) => {
+        setTransactionType(type);
+        setDialogOpen(true);
+    }
+
     const filteredTransactions = useMemo(() => {
         if (!company) return [];
+        // Show all transactions for this company, including global and company-scoped ones.
         return transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
@@ -58,7 +67,17 @@ function CompanyTransactionsContent() {
                 title={pageTitle}
                 description={`A summary of ${filteredTransactions.length} transactions.`}
             >
-                 <Button onClick={() => router.back()}>Go Back</Button>
+                 <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => handleOpenDialog('UPI_DEBIT')}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add UPI
+                    </Button>
+                    <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
+                         <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Entry
+                    </Button>
+                    <Button onClick={() => router.back()}>Go Back</Button>
+                 </div>
             </PageHeader>
 
             <Card>
@@ -104,6 +123,20 @@ function CompanyTransactionsContent() {
                     </div>
                 </CardContent>
             </Card>
+
+            {transactionType && (
+                <TransactionDialog
+                    open={dialogOpen}
+                    onOpenChange={setDialogOpen}
+                    transactionType={transactionType}
+                    // Pass default company and location, and set the scope to company-only
+                    defaults={{
+                        companyName: company,
+                        location: location || undefined,
+                        scope: 'company'
+                    }}
+                />
+            )}
         </div>
     );
 }

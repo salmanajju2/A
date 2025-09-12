@@ -33,6 +33,7 @@ export interface Transaction {
   location?: string;
   upiTransactionId?: string;
   recordedBy: string;
+  scope?: 'global' | 'company';
 }
 
 export type TransactionUpdatePayload = Omit<Transaction, 'id' | 'timestamp' | 'recordedBy' | 'type'>

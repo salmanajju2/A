@@ -28,6 +28,7 @@ interface TransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   transactionType?: TransactionType;
   transaction?: Transaction | null;
+  defaults?: Partial<Transaction>;
 }
 
 const formSchema = z.object({
@@ -37,11 +38,12 @@ const formSchema = z.object({
   companyName: z.string().optional(),
   location: z.string().optional(),
   upiTransactionId: z.string().optional(),
+  scope: z.enum(['global', 'company']).optional(),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
 
-export function TransactionDialog({ open, onOpenChange, transactionType, transaction }: TransactionDialogProps) {
+export function TransactionDialog({ open, onOpenChange, transactionType, transaction, defaults }: TransactionDialogProps) {
   const { addTransaction, updateTransaction } = useAppContext();
   const { toast } = useToast();
   
@@ -62,6 +64,8 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
       companyName: '',
       location: '',
       upiTransactionId: '',
+      scope: 'global',
+      ...defaults
     },
   });
 
@@ -73,19 +77,21 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         companyName: transaction.companyName,
         location: transaction.location,
         upiTransactionId: transaction.upiTransactionId,
-        denominations: transaction.denominations
+        denominations: transaction.denominations,
+        scope: transaction.scope || 'global',
       });
     } else {
       form.reset({
         amount: 0,
         customerName: '',
-        companyName: '',
-        location: '',
+        companyName: defaults?.companyName || '',
+        location: defaults?.location || '',
         upiTransactionId: '',
-        denominations: {}
+        denominations: {},
+        scope: defaults?.scope || 'global',
       });
     }
-  }, [transaction, form]);
+  }, [transaction, form, defaults]);
 
 
   const isCashTransaction = currentTransactionType.includes('CASH');
@@ -181,7 +187,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Company Name</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={field.onChange} value={field.value || ''} disabled={!!defaults?.companyName}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a company" />
@@ -206,7 +212,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Location</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select onValueChange={field.onChange} value={field.value || ''} disabled={!!defaults?.location}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a location" />
