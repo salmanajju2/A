@@ -58,10 +58,6 @@ export const columns: ColumnDef<Transaction>[] = [
     cell: ({ row }) => <div className="font-medium">{formatCurrency(row.getValue('amount'))}</div>,
   },
   {
-    accessorKey: 'description',
-    header: 'Description',
-  },
-  {
     accessorKey: 'customerName',
     header: 'Customer',
   },

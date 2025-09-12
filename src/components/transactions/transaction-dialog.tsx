@@ -13,7 +13,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { TransactionType, DenominationCount } from '@/lib/types';
@@ -31,7 +30,6 @@ interface TransactionDialogProps {
 
 const formSchema = z.object({
   amount: z.coerce.number().positive({ message: 'Amount must be positive.' }),
-  description: z.string().optional(),
   denominations: z.custom<Partial<DenominationCount>>().optional(),
   accountId: z.string().optional(),
   atmId: z.string().optional(),
@@ -52,7 +50,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: 0,
-      description: '',
       accountId: '',
       atmId: '',
       partnerBankUTR: '',
@@ -149,17 +146,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                  <FormField control={form.control} name="location" render={({ field }) => (
                     <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
-
-                <FormField control={form.control} name="description" render={({ field }) => (
-                    <FormItem><FormLabel>Description / Notes</FormLabel><FormControl><Textarea placeholder="Add a description or any notes..." {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
                 
-                <FormItem>
-                    <FormLabel>Recorded By</FormLabel>
-                    <FormControl>
-                        <Input disabled value={user?.name} />
-                    </FormControl>
-                </FormItem>
               </div>
             </ScrollArea>
             <DialogFooter className="pt-4">

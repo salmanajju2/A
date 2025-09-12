@@ -2,7 +2,7 @@
 import { Table } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Trash, Download, Upload, FileText, FileJson } from 'lucide-react';
+import { Trash, Download, Upload } from 'lucide-react';
 import { DataTableViewOptions } from './data-table-view-options';
 import { DataTableFacetedFilter } from './data-table-faceted-filter';
 import { TRANSACTION_TYPES } from '@/lib/constants';
@@ -67,10 +67,10 @@ export function DataTableToolbar<TData>({ table }: DataTableToolbarProps<TData>)
     <div className="flex items-center justify-between">
       <div className="flex flex-1 items-center space-x-2">
         <Input
-          placeholder="Filter by description..."
-          value={(table.getColumn('description')?.getFilterValue() as string) ?? ''}
+          placeholder="Filter by customer..."
+          value={(table.getColumn('customerName')?.getFilterValue() as string) ?? ''}
           onChange={(event) =>
-            table.getColumn('description')?.setFilterValue(event.target.value)
+            table.getColumn('customerName')?.setFilterValue(event.target.value)
           }
           className="h-8 w-[150px] lg:w-[250px]"
         />
