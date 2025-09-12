@@ -152,7 +152,7 @@ function CompanyTransactionsContent() {
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                ...debitEntries.slice(0, 8).map(amt => formatValue(amt)),
+                ...debitEntries.slice(0, 8).map(amt => ({ content: formatValue(amt), styles: { halign: 'right' } })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
                 { content: formatFooterAmount(totalDebit), styles: { halign: 'right', fontStyle: 'bold', textColor: redColor } },
             ],
@@ -199,14 +199,10 @@ function CompanyTransactionsContent() {
                 9: { halign: 'right', fontStyle: 'bold' },
             },
             didParseCell: function(data: any) {
-                // Format all numeric cells
-                if (typeof data.cell.raw === 'number') {
-                    data.cell.text = [formatValue(data.cell.raw)];
+                if (typeof data.cell.raw === 'number' && data.section !== 'body') {
+                     data.cell.text = [formatValue(data.cell.raw)];
                 }
             },
-            didDrawPage: function(data) {
-                // Remove default page numbering
-            }
         });
     
         doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
@@ -242,7 +238,7 @@ function CompanyTransactionsContent() {
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
-                            <span className={cn("font-bold")}>{formatCurrency(summary.net)}</span>
+                            <span className={cn("font-bold", summary.net >= 0 ? '' : 'text-red-500')}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
@@ -282,7 +278,7 @@ function CompanyTransactionsContent() {
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold")}>
+                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? '' : 'text-red-500')}>
                                             {formatCurrency(tx.amount)}
                                         </p>
                                     </div>
