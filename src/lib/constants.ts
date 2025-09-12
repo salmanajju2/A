@@ -1,7 +1,6 @@
 import type { Denomination } from './types';
 
 export const DENOMINATIONS: Denomination[] = [
-  { value: 2000, label: '₹2000' },
   { value: 500, label: '₹500' },
   { value: 200, label: '₹200' },
   { value: 100, label: '₹100' },

@@ -2,7 +2,6 @@ import type { Transaction, DenominationVault } from './types';
 
 export const initialVault: DenominationVault = {
   denominations: {
-    d2000: 10,
     d500: 20,
     d200: 50,
     d100: 100,
@@ -23,7 +22,6 @@ export const initialTransactions: Transaction[] = [
     type: 'CASH_CREDIT',
     amount: 5000,
     timestamp: new Date(now.getTime() - 10000).toISOString(),
-    description: 'Initial cash deposit',
     customerName: 'Self',
     companyName: 'Ali Enterprises',
     location: 'Main Branch',
@@ -35,7 +33,6 @@ export const initialTransactions: Transaction[] = [
     type: 'UPI_CREDIT',
     amount: 1250,
     timestamp: new Date(now.getTime() - 20000).toISOString(),
-    description: 'Payment from client A',
     customerName: 'Client A',
     companyName: 'Client A Inc.',
     location: 'Remote',
@@ -47,7 +44,6 @@ export const initialTransactions: Transaction[] = [
     type: 'CASH_DEBIT',
     amount: 350,
     timestamp: new Date(now.getTime() - 30000).toISOString(),
-    description: 'Office supplies',
     customerName: 'Local Store',
     companyName: 'Stationery World',
     location: 'City Market',

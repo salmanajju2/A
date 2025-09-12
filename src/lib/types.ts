@@ -6,7 +6,6 @@ export type Denomination = {
 };
 
 export type DenominationCount = {
-  d2000: number;
   d500: number;
   d200: number;
   d100: number;
@@ -25,7 +24,6 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   timestamp: string;
-  description?: string;
   denominations?: Partial<DenominationCount>;
   accountId?: string;
   atmId?: string;
