@@ -244,3 +244,5 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
     </Dialog>
   );
 }
+
+    

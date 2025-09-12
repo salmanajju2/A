@@ -71,103 +71,118 @@ function CompanyTransactionsContent() {
     const handleDownloadPdf = () => {
         const doc = new jsPDF({ orientation: 'landscape' });
         const generationDate = new Date();
-    
-        const title = `Generated on: ${generationDate.toLocaleDateString('en-GB', { day:'numeric', month:'numeric', year:'numeric'})}, ${generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-        doc.setFontSize(12);
-        doc.text(title, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+        const formattedDate = generationDate.toLocaleDateString('en-GB', { day:'2-digit', month:'2-digit', year:'numeric'});
+        const formattedTime = generationDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
 
-        const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
+        // Main Title
+        doc.setFontSize(22);
+        doc.setFont('helvetica', 'bold');
+        doc.text(`Report for ${company} ${location || ''}`, doc.internal.pageSize.getWidth() / 2, 20, { align: 'center' });
+
+        // Sub Title
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+
+
+        // --- Data Processing ---
+        const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
         const debitEntries: number[] = [];
-        
+
+        // Sort transactions by customer name for grouping
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
 
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
-                const customer = tx.customerName;
-                if (!customerCredits[customer]) {
-                    customerCredits[customer] = { cash: [], upi: [], total: 0 };
+                if (!customerCredits[tx.customerName]) {
+                    customerCredits[tx.customerName] = { cash: [], upi: [], total: 0 };
                 }
-                if (tx.type === 'CASH_CREDIT' && customerCredits[customer].cash.length < 4) {
-                    customerCredits[customer].cash.push(tx.amount);
-                } else if (tx.type === 'UPI_CREDIT' && customerCredits[customer].upi.length < 4) {
-                    customerCredits[customer].upi.push(tx.amount);
+                const customer = customerCredits[tx.customerName];
+                if (tx.type === 'CASH_CREDIT' && customer.cash.length < 4) {
+                    customer.cash.push(tx.amount);
+                } else if (tx.type === 'UPI_CREDIT' && customer.upi.length < 4) {
+                    customer.upi.push(tx.amount);
                 }
-                customerCredits[customer].total += tx.amount;
+                customer.total += tx.amount;
             } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
-                 debitEntries.push(tx.amount);
+                debitEntries.push(tx.amount);
             }
         });
-    
-        const head = [
-            [
-                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }, 
-                { content: 'Cash', colSpan: 4, styles: { halign: 'center' } }, 
-                { content: 'UPI', colSpan: 4, styles: { halign: 'center' } }, 
-                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
-            ],
-            ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
-        ];
-    
+
+        // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const rowData: any[] = [
-                { content: name, styles: { fontStyle: 'bold' } }
-            ];
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? formatCurrency(data.cash[i], { symbol: '₹' }) : '', styles: { halign: 'right' } });
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? formatCurrency(data.upi[i], { symbol: '₹' }) : '', styles: { halign: 'right' } });
-            rowData.push({ content: formatCurrency(data.total, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } });
+            const rowData: any[] = [name];
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i]) : '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i]) : '');
+            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold' } });
             return rowData;
         });
-    
+
+
+        // --- Table Footer Calculations ---
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
-        const totalDebit = debitEntries.reduce((s, a) => s + a, 0);
+        const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const footer = [];
-        
-        const totalCreditRow: any[] = [
-            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' }},
-            { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } }
+        const footer = [
+            [
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(totalCredit), styles: { fillColor: [255,255,255] } }
+            ],
+             [
+                { content: 'Entry', styles: { fontStyle: 'bold' } },
+                ...debitEntries.slice(0, 3).map(amt => formatCurrency(amt)),
+                // Fill remaining cells if less than 3 entries
+                ...Array(Math.max(0, 3 - debitEntries.length)).fill(''),
+                // Empty UPI cells
+                '', '', '', '',
+                { content: formatCurrency(totalDebit), colSpan: 2, styles: { fillColor: [255,255,255] } },
+             ],
+            [
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(closingBalance), styles: { fillColor: [255,255,255] } }
+            ],
         ];
-        footer.push(totalCreditRow);
 
-        const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
-        for (let i = 0; i < 8; i++) {
-            entryRow.push({content: debitEntries[i] ? formatCurrency(debitEntries[i], { symbol: '₹' }) : '', styles: {halign: 'right'}});
-        }
-        entryRow.push({ content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } });
-        footer.push(entryRow);
-        
-        const closingBalanceRow: any[] = [
-            { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } }
-        ];
-        footer.push(closingBalanceRow);
-        
         (doc as any).autoTable({
-            head: head,
+            head: [
+                [
+                    { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                    { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
+                    { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
+                    { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
+                ],
+                ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
+            ],
             body: body,
             foot: footer,
-            startY: 15,
+            startY: 35,
             theme: 'grid',
             headStyles: {
+                fillColor: [230, 230, 230], // Light grey
                 textColor: [0, 0, 0],
-                fontStyle: 'bold',
-                halign: 'center',
+                fontStyle: 'bold'
             },
             columnStyles: {
-                0: { },
-                9: { }
+                0: { fontStyle: 'bold' }, // Customer Name
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right' },
+                8: { halign: 'right' },
+                9: { halign: 'right', fontStyle: 'bold' } // Total Credit
             },
             didParseCell: function(data: any) {
-                 if (data.section === 'head') {
+                // Center align all header cells
+                if (data.section === 'head') {
                     data.cell.styles.halign = 'center';
                 }
             }
         });
 
-        doc.setFontSize(10);
-        doc.text(`Amount in Words: ${numberToWords(closingBalance)}`, 14, (doc as any).autoTable.previous.finalY + 10);
-    
         doc.save(`${company}_${location ? location + '_' : ''}${generationDate.toISOString().split('T')[0]}.pdf`);
     }
 
@@ -197,11 +212,11 @@ function CompanyTransactionsContent() {
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Debit:</span>
-                            <span className="font-semibold text-red-600">{formatCurrency(summary.debit)}</span>
+                            <span className="font-semibold">{formatCurrency(summary.debit)}</span>
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
-                            <span className={cn("font-bold", summary.net < 0 ? "text-red-600" : "text-primary")}>{formatCurrency(summary.net)}</span>
+                            <span className={cn("font-bold", summary.net < 0 ? "text-red-500" : "")}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
@@ -234,14 +249,14 @@ function CompanyTransactionsContent() {
                                     <div className="p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-muted' : 'bg-red-100')}>
-                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-primary" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
+                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                             </div>
                                             <div>
                                                 <p className="font-medium">{tx.customerName || tx.companyName || 'N/A'}</p>
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? '' : 'text-red-600')}>
+                                        <p className={cn("text-lg font-bold", tx.type.includes('DEBIT') ? 'text-red-600' : '')}>
                                             {formatCurrency(tx.amount)}
                                         </p>
                                     </div>

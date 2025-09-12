@@ -107,10 +107,10 @@ export default function CompanySummaryPage() {
                         <div className="text-sm text-muted-foreground">({summary.transactionCount} transactions)</div>
                       </TableCell>
                       <TableCell className="text-right">{formatCurrency(summary.credit)}</TableCell>
-                      <TableCell className="text-right text-red-600">{formatCurrency(summary.debit)}</TableCell>
+                      <TableCell className="text-right text-red-500">{formatCurrency(summary.debit)}</TableCell>
                       <TableCell className={cn(
                         "text-right font-bold",
-                        summary.net < 0 ? "text-red-600" : "text-primary"
+                        summary.net < 0 ? "text-red-500" : ""
                       )}>
                         {formatCurrency(summary.net)}
                       </TableCell>
@@ -131,3 +131,5 @@ export default function CompanySummaryPage() {
     </div>
   );
 }
+
+    
