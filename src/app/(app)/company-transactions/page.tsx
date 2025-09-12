@@ -87,7 +87,7 @@ function CompanyTransactionsContent() {
         doc.setFont('helvetica', 'normal');
         doc.text(`Generated on: ${formattedDate}, ${formattedTime}`, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
     
-        const customerCredits: { [key: string]: { cash: number[], upi: number[], total: number } } = {};
+        const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[], total: number } } = {};
         const debitEntries: number[] = [];
     
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
@@ -95,13 +95,15 @@ function CompanyTransactionsContent() {
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    customerCredits[tx.customerName] = { cash: [], upi: [], total: 0 };
+                    customerCredits[tx.customerName] = { cash: Array(4).fill(''), upi: Array(4).fill(''), total: 0 };
                 }
                 const customer = customerCredits[tx.customerName];
                 if (tx.type === 'CASH_CREDIT') {
-                    customer.cash.push(tx.amount);
+                    const emptyIndex = customer.cash.findIndex(c => c === '');
+                    if(emptyIndex !== -1) customer.cash[emptyIndex] = tx.amount;
                 } else if (tx.type === 'UPI_CREDIT') {
-                    customer.upi.push(tx.amount);
+                    const emptyIndex = customer.upi.findIndex(c => c === '');
+                    if(emptyIndex !== -1) customer.upi[emptyIndex] = tx.amount;
                 }
                 customer.total += tx.amount;
             } else if (tx.type === 'COMPANY_ADJUSTMENT_DEBIT') {
@@ -110,41 +112,49 @@ function CompanyTransactionsContent() {
         });
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-            const rowData: (string | number)[] = [
+            return [
                 name,
-                data.cash[0] || '',
-                data.cash[1] || '',
-                data.cash[2] || '',
-                data.cash[3] || '',
-                data.upi[0] || '',
-                data.upi[1] || '',
-                data.upi[2] || '',
-                data.upi[3] || '',
+                ...data.cash,
+                ...data.upi,
                 data.total,
             ];
-            return rowData;
         });
 
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = debitEntries.reduce((sum, amount) => sum + amount, 0);
         const closingBalance = totalCredit - totalDebit;
 
-        const footerRows = [
-            [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
-                { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
-            ],
-            [
-                { content: 'Entry', styles: { fontStyle: 'bold', halign: 'left' } },
-                ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' } })),
-                ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
-            ],
-            [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e9f5e9' : '#fdecec' } },
-                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e9f5e9' : '#fdecec' } }
-            ]
+        const footerContent = [];
+
+        // Total Credit Row
+        footerContent.push([
+            { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } },
+            { content: formatCurrency(totalCredit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#e9f5e9' } }
+        ]);
+        
+        // Entry Row
+        const entryRow: any[] = [
+            { content: 'Entry', styles: { fontStyle: 'bold', fillColor: '#00b050', textColor: '#000000'} }
         ];
+        for (let i = 0; i < 8; i++) {
+            entryRow.push({
+                content: debitEntries[i] ? formatCurrency(debitEntries[i]) : '',
+                styles: { halign: 'right', fontStyle: 'bold', fillColor: '#00b050', textColor: '#000000' }
+            });
+        }
+        entryRow.push({
+            content: formatCurrency(totalDebit),
+            styles: { halign: 'right', fontStyle: 'bold', fillColor: '#ffc7ce' }
+        });
+        footerContent.push(entryRow);
+
+
+        // Closing Balance Row
+        footerContent.push([
+            { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+            { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold' } }
+        ]);
+
         
         autoTable(doc, {
             head: [
@@ -157,7 +167,7 @@ function CompanyTransactionsContent() {
                 ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
             ],
             body: body,
-            foot: footerRows,
+            foot: footerContent,
             startY: 35,
             theme: 'grid',
             styles: {
@@ -165,7 +175,7 @@ function CompanyTransactionsContent() {
                 lineColor: [0, 0, 0],
                 lineWidth: 0.1,
                 font: 'helvetica',
-                fontStyle: 'bold'
+                fontStyle: 'normal'
             },
             headStyles: {
                 fillColor: '#f2f2f2',
@@ -175,20 +185,23 @@ function CompanyTransactionsContent() {
             },
             footStyles: {
                 fontStyle: 'bold',
+                textColor: '#000000',
+                lineColor: [0, 0, 0],
+                lineWidth: 0.1
             },
             columnStyles: {
                 0: { fontStyle: 'bold', cellWidth: 35, halign: 'left', fillColor: '#f2f2f2' },
-                1: { halign: 'right', fontStyle: 'normal' },
-                2: { halign: 'right', fontStyle: 'normal' },
-                3: { halign: 'right', fontStyle: 'normal' },
-                4: { halign: 'right', fontStyle: 'normal' },
-                5: { halign: 'right', fontStyle: 'normal' },
-                6: { halign: 'right', fontStyle: 'normal' },
-                7: { halign: 'right', fontStyle: 'normal' },
-                8: { halign: 'right', fontStyle: 'normal' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right' },
+                6: { halign: 'right' },
+                7: { halign: 'right' },
+                8: { halign: 'right' },
                 9: { halign: 'right', fontStyle: 'bold' },
             },
-            didParseCell: function (data) {
+             didParseCell: function (data) {
                 if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw > 0) {
                      data.cell.text = [formatCurrency(data.cell.raw as number)];
                 }
@@ -333,5 +346,7 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
