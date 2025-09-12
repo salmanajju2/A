@@ -110,7 +110,7 @@ function CompanyTransactionsContent() {
                                             </div>
                                             <div>
                                                 <p className="font-medium">{tx.customerName || 'N/A'}</p>
-                                                <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]} &bull; {formatDate(new Date(tx.timestamp))}</p>
+                                                <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
                                         <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
