@@ -110,7 +110,7 @@ function CompanyTransactionsContent() {
     
         const footer = [
             ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8' } }],
-            [{ content: 'Entry', styles: { fontStyle: 'bold' } }, 
+            [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]) : ''),
                 ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]) : ''),
                 '',
@@ -142,7 +142,7 @@ function CompanyTransactionsContent() {
                 10: { halign: 'right' }
             },
             didParseCell: function(data: any) {
-                if (data.section === 'body' && data.column.index >= 1) {
+                if (data.section === 'body' && data.column.index >= 1 && data.column.index < 10) {
                     data.cell.styles.halign = 'right';
                 }
             }
