@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import type { TransactionType, DenominationCount } from '@/lib/types';
-import { TRANSACTION_TYPES, COMPANY_NAMES } from '@/lib/constants';
+import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import { DenominationInput } from './denomination-input';
 import { useEffect } from 'react';
 import { formatCurrency } from '@/lib/helpers';
@@ -165,9 +165,30 @@ export function TransactionDialog({ open, onOpenChange, transactionType }: Trans
                   )}
                 />
 
-                 <FormField control={form.control} name="location" render={({ field }) => (
-                    <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Enter location" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+                 <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Location</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a location" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {LOCATIONS.map((location) => (
+                            <SelectItem key={location} value={location}>
+                              {location}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
               </div>
             </ScrollArea>

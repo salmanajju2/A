@@ -45,6 +45,13 @@ export const COMPANY_NAMES = [
   'UNITY SMALL',
 ] as const;
 
+export const LOCATIONS = [
+    'RMU',
+    'BXU',
+    'KXU',
+    'RDP',
+] as const;
+
 export const LOCAL_STORAGE_KEYS = {
   USER: 'denomination-depot-user',
   TRANSACTIONS: 'denomination-depot-transactions',
