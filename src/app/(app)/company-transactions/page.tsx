@@ -110,10 +110,18 @@ function CompanyTransactionsContent() {
         });
     
         const body = Object.entries(customerCredits).map(([name, data]) => {
-             const rowData: (string | number)[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] || '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] || '');
-            rowData.push(data.total);
+            const rowData: (string | number)[] = [
+                name,
+                data.cash[0] || '',
+                data.cash[1] || '',
+                data.cash[2] || '',
+                data.cash[3] || '',
+                data.upi[0] || '',
+                data.upi[1] || '',
+                data.upi[2] || '',
+                data.upi[3] || '',
+                data.total,
+            ];
             return rowData;
         });
 
@@ -130,11 +138,11 @@ function CompanyTransactionsContent() {
                 { content: 'Entry', styles: { fontStyle: 'bold', halign: 'left' } },
                 ...debitEntries.slice(0, 8).map(amt => ({ content: formatCurrency(amt), styles: { halign: 'right' } })),
                 ...Array(Math.max(0, 8 - debitEntries.length)).fill(''),
-                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold' } }
+                { content: formatCurrency(totalDebit), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } },
-                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', fillColor: '#fdecec' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e9f5e9' : '#fdecec' } },
+                { content: formatCurrency(closingBalance), styles: { halign: 'right', fontStyle: 'bold', fillColor: closingBalance >= 0 ? '#e9f5e9' : '#fdecec' } }
             ]
         ];
         
@@ -157,17 +165,19 @@ function CompanyTransactionsContent() {
                 lineColor: [0, 0, 0],
                 lineWidth: 0.1,
                 font: 'helvetica',
+                fontStyle: 'bold'
             },
             headStyles: {
                 fillColor: '#f2f2f2',
                 textColor: '#000000',
                 fontStyle: 'bold',
+                halign: 'center'
             },
             footStyles: {
                 fontStyle: 'bold',
             },
             columnStyles: {
-                0: { fontStyle: 'bold', cellWidth: 35, halign: 'left' },
+                0: { fontStyle: 'bold', cellWidth: 35, halign: 'left', fillColor: '#f2f2f2' },
                 1: { halign: 'right', fontStyle: 'normal' },
                 2: { halign: 'right', fontStyle: 'normal' },
                 3: { halign: 'right', fontStyle: 'normal' },
@@ -178,7 +188,7 @@ function CompanyTransactionsContent() {
                 8: { halign: 'right', fontStyle: 'normal' },
                 9: { halign: 'right', fontStyle: 'bold' },
             },
-             didParseCell: function (data) {
+            didParseCell: function (data) {
                 if (data.section === 'body' && typeof data.cell.raw === 'number' && data.cell.raw > 0) {
                      data.cell.text = [formatCurrency(data.cell.raw as number)];
                 }
