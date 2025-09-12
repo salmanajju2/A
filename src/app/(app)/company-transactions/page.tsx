@@ -112,9 +112,9 @@ function CompanyTransactionsContent() {
             const rowData: any[] = [
                 { content: name, styles: { fontStyle: 'bold' } }
             ];
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? formatCurrency(data.cash[i]) : '', styles: { halign: 'right' } });
-            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? formatCurrency(data.upi[i]) : '', styles: { halign: 'right' } });
-            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold', halign: 'right' } });
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.cash[i] ? formatCurrency(data.cash[i], { symbol: '₹' }) : '', styles: { halign: 'right' } });
+            for (let i = 0; i < 4; i++) rowData.push({ content: data.upi[i] ? formatCurrency(data.upi[i], { symbol: '₹' }) : '', styles: { halign: 'right' } });
+            rowData.push({ content: formatCurrency(data.total, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } });
             return rowData;
         });
     
@@ -126,20 +126,20 @@ function CompanyTransactionsContent() {
         
         const totalCreditRow: any[] = [
             { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' }},
-            { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', halign: 'right' } }
+            { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } }
         ];
         footer.push(totalCreditRow);
 
         const entryRow: any[] = [{ content: 'Entry', styles: { fontStyle: 'bold' } }];
         for (let i = 0; i < 8; i++) {
-            entryRow.push({content: debitEntries[i] ? formatCurrency(debitEntries[i]) : '', styles: {halign: 'right'}});
+            entryRow.push({content: debitEntries[i] ? formatCurrency(debitEntries[i], { symbol: '₹' }) : '', styles: {halign: 'right'}});
         }
-        entryRow.push({ content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', halign: 'right' } });
+        entryRow.push({ content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } });
         footer.push(entryRow);
         
         const closingBalanceRow: any[] = [
             { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-            { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', halign: 'right' } }
+            { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fontStyle: 'bold', halign: 'right' } }
         ];
         footer.push(closingBalanceRow);
         
@@ -152,13 +152,12 @@ function CompanyTransactionsContent() {
             headStyles: {
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
-                halign: 'center'
-            },
-            footStyles: {
-                textColor: [0, 0, 0],
+                halign: 'center',
+                fillColor: [242, 242, 242]
             },
             columnStyles: {
-                0: { fontStyle: 'bold' },
+                0: { fillColor: [242, 242, 242] },
+                9: { fillColor: [242, 242, 242] }
             },
             didParseCell: function(data: any) {
                  if (data.section === 'head') {
@@ -308,7 +307,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
-
-    
