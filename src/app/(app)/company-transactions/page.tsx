@@ -109,9 +109,9 @@ function CompanyTransactionsContent() {
                 }
                 customerCredits[customer].total += tx.amount;
             } else if (tx.type.includes('DEBIT')) {
-                if (tx.type.includes('CASH')) {
+                if (tx.type.includes('CASH') && debitEntries.cash.length < 3) {
                     debitEntries.cash.push(tx.amount);
-                } else if (tx.type.includes('UPI')) {
+                } else if (tx.type.includes('UPI') && debitEntries.upi.length < 3) {
                     debitEntries.upi.push(tx.amount);
                 }
             }
@@ -133,11 +133,23 @@ function CompanyTransactionsContent() {
         const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
         const totalDebit = [...debitEntries.cash, ...debitEntries.upi].reduce((s, a) => s + a, 0);
         const closingBalance = totalCredit - totalDebit;
-
+        
+        const debitRow = ['ENTRY'];
+        for (let i = 0; i < 3; i++) debitRow.push(debitEntries.cash[i] || '');
+        for (let i = 0; i < 3; i++) debitRow.push(debitEntries.upi[i] || '');
+        debitRow.push(totalDebit);
+        
         const footer = [
             [{ content: 'TOTAL', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: totalCredit, styles: { fillColor: [76, 175, 80], textColor: [255,255,255], fontStyle: 'bold' } }],
-            [{ content: 'ENTRY', styles: { fontStyle: 'bold', halign: 'center' } }, { content: totalDebit, colSpan: 6, styles: { fontStyle: 'bold' } }, { content: totalDebit, styles: { fillColor: [255, 235, 59], fontStyle: 'bold' } }],
-            [{ content: 'BALANCE', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: closingBalance, styles: { fillColor: [244, 67, 54], textColor: [255,255,255], fontStyle: 'bold' } }]
+            debitRow.map((content, index) => ({
+                 content,
+                 styles: { 
+                     fontStyle: 'bold',
+                     halign: index === 0 ? 'center' : 'right',
+                     fillColor: index === 7 ? [255, 235, 59] : undefined
+                }
+            })),
+            [{ content: 'BALANCE', colSpan: 7, styles: { fontStyle: 'bold', halign: 'center' } }, { content: closingBalance, styles: { fillColor: closingBalance < 0 ? [244, 67, 54] : [76, 175, 80], textColor: [255,255,255], fontStyle: 'bold' } }]
         ];
 
         (doc as any).autoTable({
@@ -163,20 +175,18 @@ function CompanyTransactionsContent() {
                 7: { halign: 'right', fontStyle: 'bold', fillColor: [76, 175, 80], textColor: [255,255,255] } // Total column with green background
             },
             didParseCell: function(data: any) {
-                 if (data.section === 'body' && data.column.index > 0 && data.column.index < 7) {
-                    if (data.cell.raw) {
-                       data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
-                    }
-                }
-                if (data.section === 'body' && data.column.index === 7) {
-                     data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
-                }
-                if (data.section === 'foot') {
-                     if (data.cell.raw) {
-                       data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
-                    }
-                    data.cell.styles.halign = 'right';
-                }
+                 if (data.cell.raw !== '' && !isNaN(Number(data.cell.raw))) {
+                    data.cell.text = [Number(data.cell.raw).toLocaleString('en-IN')];
+                 }
+                 if(data.section === 'foot' && data.row.index === 1 && data.column.index > 0 && data.column.index < 7) {
+                    data.cell.styles.fillColor = undefined;
+                 }
+                 if(data.section === 'foot' && data.row.index === 1) {
+                     data.cell.styles.halign = data.column.index === 0 ? 'center' : 'right';
+                 }
+                  if(data.section === 'foot' && (data.row.index === 0 || data.row.index === 2)) {
+                     data.cell.styles.halign = 'right';
+                 }
             },
         });
 
@@ -321,3 +331,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
