@@ -112,9 +112,9 @@ function CompanyTransactionsContent() {
         // --- Table Body ---
         const body = Object.entries(customerCredits).map(([name, data]) => {
             const rowData: any[] = [name];
-            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i]) : '');
-            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i]) : '');
-            rowData.push({ content: formatCurrency(data.total), styles: { fontStyle: 'bold' } });
+            for (let i = 0; i < 4; i++) rowData.push(data.cash[i] ? formatCurrency(data.cash[i], { symbol: '' }) : '');
+            for (let i = 0; i < 4; i++) rowData.push(data.upi[i] ? formatCurrency(data.upi[i], { symbol: '' }) : '');
+            rowData.push({ content: formatCurrency(data.total, { symbol: '' }), styles: { fontStyle: 'bold' } });
             return rowData;
         });
     
@@ -126,19 +126,19 @@ function CompanyTransactionsContent() {
     
         const footer = [
             [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
-                { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold' } }
             ],
              [
-                { content: 'Entry', styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
-                ...debitEntries.slice(0, 3).map(amt => ({ content: formatCurrency(amt), styles: { fillColor: [255, 255, 255], textColor: [0, 0, 0] } })),
+                { content: 'Entry', styles: { fontStyle: 'bold' } },
+                ...debitEntries.slice(0, 3).map(amt => ({ content: formatCurrency(amt) })),
                 ...Array(Math.max(0, 3 - debitEntries.length)).fill(''),
                  { content: '', colSpan: 4 }, // Empty cells for UPI
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] }, colSpan: 2 },
+                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold' }, colSpan: 2 },
              ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } },
-                { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: [255, 255, 255], textColor: [0, 0, 0] } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold' } }
             ],
         ];
     
@@ -213,7 +213,7 @@ function CompanyTransactionsContent() {
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
-                            <span className={cn("font-bold", summary.net < 0 ? "text-red-500" : "")}>{formatCurrency(summary.net)}</span>
+                            <span className={cn("font-bold")}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
@@ -245,15 +245,15 @@ function CompanyTransactionsContent() {
                                 <Collapsible key={tx.id} className="rounded-lg border">
                                     <div className="p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-muted' : 'bg-red-100')}>
-                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
+                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-muted' : 'bg-muted')}>
+                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4" /> : <ArrowDownLeft className="h-4 w-4" />}
                                             </div>
                                             <div>
                                                 <p className="font-medium">{tx.customerName || tx.companyName || 'N/A'}</p>
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold", tx.type.includes('DEBIT') ? 'text-red-600' : '')}>
+                                        <p className={cn("text-lg font-bold")}>
                                             {formatCurrency(tx.amount)}
                                         </p>
                                     </div>

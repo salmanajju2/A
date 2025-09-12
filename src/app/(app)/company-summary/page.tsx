@@ -107,10 +107,9 @@ export default function CompanySummaryPage() {
                         <div className="text-sm text-muted-foreground">({summary.transactionCount} transactions)</div>
                       </TableCell>
                       <TableCell className="text-right">{formatCurrency(summary.credit)}</TableCell>
-                      <TableCell className="text-right text-red-500">{formatCurrency(summary.debit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(summary.debit)}</TableCell>
                       <TableCell className={cn(
-                        "text-right font-bold",
-                        summary.net < 0 ? "text-red-500" : ""
+                        "text-right font-bold"
                       )}>
                         {formatCurrency(summary.net)}
                       </TableCell>

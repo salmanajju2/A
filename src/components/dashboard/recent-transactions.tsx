@@ -11,8 +11,8 @@ export default function RecentTransactions() {
   const recentTransactions = transactions.slice(0, 5);
 
   const getIcon = (type: string) => {
-    if (type.includes('CREDIT')) return <ArrowUpRight className="h-4 w-4 text-green-500" />;
-    if (type.includes('DEBIT')) return <ArrowDownLeft className="h-4 w-4 text-red-500" />;
+    if (type.includes('CREDIT')) return <ArrowUpRight className="h-4 w-4" />;
+    if (type.includes('DEBIT')) return <ArrowDownLeft className="h-4 w-4" />;
     return <Banknote className="h-4 w-4 text-muted-foreground" />;
   };
 
