@@ -37,7 +37,6 @@ function CompanyTransactionsContent() {
     }
 
     const handleEdit = (transaction: Transaction) => {
-        setTransactionType(transaction.type);
         setEditingTransaction(transaction);
         setDialogOpen(true);
     };
@@ -49,56 +48,108 @@ function CompanyTransactionsContent() {
     };
     
     const handleDownloadPdf = () => {
-        const doc = new jsPDF();
-        const pageTitle = `${company} ${location || ''}`.trim();
-        const total = summary.net;
-
-        // Header
-        doc.setFontSize(20);
-        doc.text(pageTitle, 14, 22);
+        const doc = new jsPDF({ orientation: 'landscape' });
+        const pageTitle = `Report for ${company} ${location || ''}`.trim();
+        const generationDate = new Date();
+    
+        // 1. Set up headers
         doc.setFontSize(10);
-        doc.text(`Statement as of ${new Date().toLocaleDateString()}`, 14, 30);
-
-        // Summary
-        let summaryY = 40;
-        doc.setFontSize(12);
-        doc.text("Balance Summary", 14, summaryY);
-        summaryY += 7;
+        doc.text(`${generationDate.toLocaleDateString()}, ${generationDate.toLocaleTimeString()}`, 14, 15);
+        doc.text(`${pageTitle} - ${generationDate.toLocaleDateString()}`, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+    
+        doc.setFontSize(22);
+        doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 28, { align: 'center' });
+    
         doc.setFontSize(10);
-        doc.text(`Total Credit: ${formatCurrency(summary.credit)}`, 14, summaryY);
-        doc.text(`Total Debit: ${formatCurrency(summary.debit)}`, 80, summaryY);
-        doc.text(`Net Balance: ${formatCurrency(summary.net)}`, 140, summaryY);
-        summaryY += 10;
-        
-        // Table
-        const tableColumn = ["Date", "Type", "Customer", "Credit", "Debit"];
-        const tableRows: (string | number)[][] = [];
-
+        doc.text(`Generated on: ${generationDate.toLocaleString()}`, doc.internal.pageSize.getWidth() / 2, 35, { align: 'center' });
+    
+    
+        // 2. Process data
+        const customerCredits: Record<string, { cash: number[], upi: number[], total: number }> = {};
+        const debitEntries: { cash: number[], upi: number[] } = { cash: [], upi: [] };
+    
         filteredTransactions.forEach(tx => {
-            const transactionData = [
-                formatDate(new Date(tx.timestamp)),
-                TRANSACTION_TYPES[tx.type],
-                tx.customerName || 'N/A',
-                tx.type.includes('CREDIT') ? formatCurrency(tx.amount) : '',
-                tx.type.includes('DEBIT') ? formatCurrency(tx.amount) : ''
+            const customer = tx.customerName || 'N/A';
+            if (tx.type.includes('CREDIT')) {
+                if (!customerCredits[customer]) {
+                    customerCredits[customer] = { cash: [], upi: [], total: 0 };
+                }
+                if (tx.type.includes('CASH')) {
+                    customerCredits[customer].cash.push(tx.amount);
+                } else if (tx.type.includes('UPI')) {
+                    customerCredits[customer].upi.push(tx.amount);
+                }
+                customerCredits[customer].total += tx.amount;
+            } else if (tx.type.includes('DEBIT')) {
+                if (tx.type.includes('CASH')) {
+                    debitEntries.cash.push(tx.amount);
+                } else if (tx.type.includes('UPI')) {
+                    debitEntries.upi.push(tx.amount);
+                }
+            }
+        });
+    
+        // 3. Prepare table data
+        const head = [
+            [{ content: 'Customer Name', rowSpan: 2 }, { content: 'Cash', colSpan: 4 }, { content: 'UPI', colSpan: 4 }, { content: 'Total Credit', rowSpan: 2 }],
+            ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
+        ];
+    
+        const body = Object.entries(customerCredits).map(([name, data]) => {
+            return [
+                name,
+                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? formatCurrency(data.cash[i]) : ''),
+                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? formatCurrency(data.upi[i]) : ''),
+                formatCurrency(data.total)
             ];
-            tableRows.push(transactionData);
         });
-
+    
+        const totalCredit = Object.values(customerCredits).reduce((sum, current) => sum + current.total, 0);
+        const totalDebit = debitEntries.cash.reduce((s, a) => s + a, 0) + debitEntries.upi.reduce((s, a) => s + a, 0);
+        const closingBalance = totalCredit - totalDebit;
+    
+        const footer = [
+            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8' } }],
+            [{ content: 'Entry', styles: { fontStyle: 'bold' } }, 
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]) : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]) : ''),
+                '',
+                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede' } }
+            ],
+            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8' } }],
+        ];
+    
+        body.push(...footer as any);
+    
+        // 4. Generate table
         (doc as any).autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: summaryY,
+            head: head,
+            body: body,
+            startY: 45,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [211, 211, 211],
+                textColor: [0, 0, 0],
+                fontStyle: 'bold',
+                halign: 'center'
+            },
+            styles: {
+                cellPadding: 2,
+                fontSize: 8
+            },
+            columnStyles: {
+                0: { fontStyle: 'bold', cellWidth: 35 },
+                10: { halign: 'right' }
+            },
+            didParseCell: function(data: any) {
+                if (data.section === 'body' && data.column.index >= 1) {
+                    data.cell.styles.halign = 'right';
+                }
+            }
         });
-
-        // Footer
-        let finalY = (doc as any).lastAutoTable.finalY + 15;
-        doc.setFontSize(10);
-        doc.text("Total in words:", 14, finalY);
-        doc.setFontSize(10);
-        doc.text(numberToWords(total), 14, finalY + 5, { maxWidth: 180 });
-
-        doc.save(`${pageTitle}_statement.pdf`);
+    
+        // 5. Save PDF
+        doc.save(`${pageTitle.replace(/ /g, "_")}_${generationDate.toISOString().split('T')[0]}.pdf`);
     }
 
     const filteredTransactions = useMemo(() => {
@@ -106,6 +157,7 @@ function CompanyTransactionsContent() {
         return transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
+            // Show both company-scoped and global transactions that match company/location
             return companyMatch && locationMatch;
         }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [transactions, company, location]);
@@ -195,7 +247,6 @@ function CompanyTransactionsContent() {
                                             </p>
                                         </div>
                                          <div className='border-t pt-4 mt-4 space-y-2 text-sm'>
-                                            {tx.upiTransactionId && <div className='flex items-center gap-2'><Hash className="h-4 w-4 text-muted-foreground" /> <span>{tx.upiTransactionId}</span></div>}
                                             <div className="text-xs text-muted-foreground">{formatDate(new Date(tx.timestamp))}</div>
                                         </div>
                                     </div>
