@@ -34,6 +34,11 @@ export function Header() {
   
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
 
+  // We want to hide the header on the company-transactions page
+  if (pathname === '/company-transactions') {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">

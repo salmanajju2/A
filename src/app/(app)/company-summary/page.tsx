@@ -4,9 +4,8 @@ import { useAppContext } from '@/context/app-context';
 import { PageHeader } from '@/components/shared/page-header';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatCurrency } from '@/lib/helpers';
-import type { Transaction } from '@/lib/types';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LOCATIONS, COMPANY_NAMES } from '@/lib/constants';
+import { LOCATIONS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRouter } from 'next/navigation';
@@ -68,7 +67,7 @@ export default function CompanySummaryPage() {
     if(summary.location) {
         params.set('location', summary.location);
     }
-    router.push(`/history?${params.toString()}`);
+    router.push(`/company-transactions?${params.toString()}`);
   }
 
   return (
