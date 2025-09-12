@@ -116,23 +116,22 @@ function CompanyTransactionsContent() {
             const total = [...data.cash, ...data.upi].reduce((sum, val) => sum + (typeof val === 'number' ? val : 0), 0);
             return [
                 name,
-                ...data.cash.map(c => typeof c === 'number' ? formatCurrency(c, { symbol: '' }) : c),
-                ...data.upi.map(u => typeof u === 'number' ? formatCurrency(u, { symbol: '' }) : u),
-                formatCurrency(total, { symbol: '' })
-            ];
+                ...data.cash,
+                ...data.upi,
+                total
+            ].map(val => (typeof val === 'number' && val !== 0) ? formatCurrency(val, { symbol: '' }) : val === 0 ? '' : val);
         });
 
         const totalCredit = body.reduce((sum, row) => {
-            const totalString = (row[row.length - 1] as string).replace(/[,]/g, '');
+            const totalString = (row[row.length - 1] as string).replace(/,/g, '');
             return sum + (parseFloat(totalString) || 0);
         }, 0);
 
         const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
         const entryAmounts = ['', '', '', ''];
-        entryTransactions.forEach(tx => {
-            const emptyIndex = entryAmounts.findIndex(a => a === '');
-            if (emptyIndex !== -1) {
-                entryAmounts[emptyIndex] = formatCurrency(tx.amount, { symbol: '' });
+        entryTransactions.forEach((tx, index) => {
+            if (index < 4) {
+                 entryAmounts[index] = formatCurrency(tx.amount, { symbol: '' });
             }
         });
         const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
@@ -152,19 +151,22 @@ function CompanyTransactionsContent() {
             ],
             body: body,
             foot: [
-                [
-                    { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
-                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { fillColor: '#e6f7ec', halign: 'right' } }
+                 [
+                    { content: 'Total Credit', colSpan: 8, styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right', fillColor: '#f2f2f2' } }
                 ],
                 [
-                    'Entry',
-                    ...entryAmounts,
-                     '', '', '', '', // Empty cells for UPI
-                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { fillColor: '#ffe6e6', halign: 'right' } }
+                    { content: 'Entry', styles: { fillColor: '#008080', textColor: '#000' } },
+                    { content: entryAmounts[0], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: entryAmounts[1], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: entryAmounts[2], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: entryAmounts[3], styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: '', colSpan: 3, styles: { fillColor: '#008080' } },
+                    { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right', fillColor: '#ffe6e6' } }
                 ],
                 [
-                    { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
-                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fillColor: '#ffe6e6', halign: 'right' } }
+                    { content: 'Closing Balance', colSpan: 8, styles: { halign: 'right', fillColor: '#008080', textColor: '#000' } },
+                    { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right', fillColor: '#ffe6e6' } }
                 ]
             ],
             theme: 'grid',
@@ -180,28 +182,20 @@ function CompanyTransactionsContent() {
                 halign: 'center',
             },
             footStyles: {
-                textColor: '#000000',
-                halign: 'right'
+                fontStyle: 'bold',
+                halign: 'right',
             },
             columnStyles: {
-                0: { halign: 'left' },
-                1: { halign: 'right' },
-                2: { halign: 'right' },
-                3: { halign: 'right' },
-                4: { halign: 'right' },
-                5: { halign: 'right' },
-                6: { halign: 'right' },
-                7: { halign: 'right' },
-                8: { halign: 'right' },
+                0: { halign: 'left', fillColor: '#f2f2f2' },
+                1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
+                5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
                 9: { halign: 'right' },
             },
-            didDrawCell: (data) => {
-                 if (data.row.section === 'head') {
-                     data.cell.styles.fillColor = '#f2f2f2';
-                 }
-                 if (data.column.index === 0 && data.row.section === 'body') {
-                    data.cell.styles.fillColor = '#f2f2f2';
-                 }
+            didParseCell: (data) => {
+                if (data.row.section === 'foot') {
+                     data.cell.styles.fontStyle = 'bold';
+                     data.cell.styles.valign = 'middle';
+                }
             }
         });
     
