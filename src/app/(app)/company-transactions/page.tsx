@@ -153,11 +153,10 @@ function CompanyTransactionsContent() {
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center',
-                fillColor: [242, 242, 242]
             },
             columnStyles: {
-                0: { fillColor: [242, 242, 242] },
-                9: { fillColor: [242, 242, 242] }
+                0: { },
+                9: { }
             },
             didParseCell: function(data: any) {
                  if (data.section === 'head') {
@@ -194,7 +193,7 @@ function CompanyTransactionsContent() {
                     <div className="flex gap-8 text-sm pt-2">
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Credit:</span>
-                            <span className="font-semibold text-green-600">{formatCurrency(summary.credit)}</span>
+                            <span className="font-semibold">{formatCurrency(summary.credit)}</span>
                         </div>
                          <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Debit:</span>
@@ -234,15 +233,15 @@ function CompanyTransactionsContent() {
                                 <Collapsible key={tx.id} className="rounded-lg border">
                                     <div className="p-4 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
-                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-green-100' : 'bg-red-100')}>
-                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-green-600" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
+                                            <div className={cn("flex h-8 w-8 items-center justify-center rounded-full", tx.type.includes('CREDIT') ? 'bg-muted' : 'bg-red-100')}>
+                                                {tx.type.includes('CREDIT') ? <ArrowUpRight className="h-4 w-4 text-primary" /> : <ArrowDownLeft className="h-4 w-4 text-red-600" />}
                                             </div>
                                             <div>
                                                 <p className="font-medium">{tx.customerName || tx.companyName || 'N/A'}</p>
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-600' : 'text-red-600')}>
+                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? '' : 'text-red-600')}>
                                             {formatCurrency(tx.amount)}
                                         </p>
                                     </div>

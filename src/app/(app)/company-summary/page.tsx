@@ -106,7 +106,7 @@ export default function CompanySummaryPage() {
                         <div className="font-medium">{`${summary.companyName} ${summary.location || ''}`.trim()}</div>
                         <div className="text-sm text-muted-foreground">({summary.transactionCount} transactions)</div>
                       </TableCell>
-                      <TableCell className="text-right text-green-600">{formatCurrency(summary.credit)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(summary.credit)}</TableCell>
                       <TableCell className="text-right text-red-600">{formatCurrency(summary.debit)}</TableCell>
                       <TableCell className={cn(
                         "text-right font-bold",
