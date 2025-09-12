@@ -36,7 +36,7 @@ export interface Transaction {
   scope?: 'global' | 'company';
 }
 
-export type TransactionUpdatePayload = Omit<Transaction, 'id' | 'timestamp' | 'recordedBy' | 'type'>
+export type TransactionUpdatePayload = Partial<Omit<Transaction, 'id' | 'timestamp' | 'recordedBy' | 'type'>>
 
 export interface User {
   id: string;

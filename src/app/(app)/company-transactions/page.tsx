@@ -48,6 +48,7 @@ function CompanyTransactionsContent() {
 
     const handleEdit = (transaction: Transaction) => {
         setEditingTransaction(transaction);
+        setTransactionType(transaction.type);
         setDialogOpen(true);
     };
 
@@ -108,9 +109,9 @@ function CompanyTransactionsContent() {
         const body = Object.entries(customerCredits).map(([name, data]) => {
             return [
                 name,
-                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? formatCurrency(data.cash[i]) : ''),
-                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? formatCurrency(data.upi[i]) : ''),
-                { content: formatCurrency(data.total), styles: { halign: 'right' } }
+                ...Array.from({ length: 4 }, (_, i) => data.cash[i] ? formatCurrency(data.cash[i]).replace('₹','').trim() : ''),
+                ...Array.from({ length: 4 }, (_, i) => data.upi[i] ? formatCurrency(data.upi[i]).replace('₹','').trim() : ''),
+                { content: formatCurrency(data.total).replace('₹','').trim(), styles: { halign: 'right' } }
             ];
         });
     
@@ -119,14 +120,14 @@ function CompanyTransactionsContent() {
         const closingBalance = totalCredit - totalDebit;
     
         const footer = [
-            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Total Credit', styles: { fontStyle: 'bold' } }, { content: formatCurrency(totalCredit).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: '#dff0d8', halign: 'right' } }],
             [{ content: 'ENTRY', styles: { fontStyle: 'bold' } }, 
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]) : ''),
-                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]) : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.cash[i] ? formatCurrency(debitEntries.cash[i]).replace('₹','').trim() : ''),
+                ...Array.from({ length: 4 }, (_, i) => debitEntries.upi[i] ? formatCurrency(debitEntries.upi[i]).replace('₹','').trim() : ''),
                 { content: 'Total Debit', styles: { fontStyle: 'bold', halign: 'right' } },
-                { content: formatCurrency(totalDebit), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
+                { content: formatCurrency(totalDebit).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: '#f2dede', halign: 'right' } }
             ],
-            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
+            ['', '', '', '', '', '', '', '', '', { content: 'Closing Balance', styles: { fontStyle: 'bold' } }, { content: formatCurrency(closingBalance).replace('₹','').trim(), styles: { fontStyle: 'bold', fillColor: closingBalance < 0 ? '#f2dede' : '#dff0d8', halign: 'right' } }],
         ];
     
         body.push(...footer as any);
@@ -138,7 +139,7 @@ function CompanyTransactionsContent() {
             startY: 45,
             theme: 'grid',
             headStyles: {
-                fillColor: [211, 211, 211],
+                fillColor: [220, 220, 220],
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
                 halign: 'center'

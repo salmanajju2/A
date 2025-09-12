@@ -22,6 +22,7 @@ type AppContextType = AppState & {
   updateTransaction: (transactionId: string, updates: TransactionUpdatePayload) => void;
   updateVault: (newVault: DenominationVault) => void;
   deleteTransactions: (transactionIds: string[]) => void;
+  login: (user: User) => void;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -48,7 +49,7 @@ const appReducer = (state: AppState, action: Action): AppState => {
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useLocalStorage<User | null>(LOCAL_STORAGE_KEYS.USER, defaultUser);
+  const [user, setUser] = useLocalStorage<User | null>(LOCAL_STORAGE_KEYS.USER, null);
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>(LOCAL_STORAGE_KEYS.TRANSACTIONS, initialTransactions);
   const [vault, setVault] = useLocalStorage<DenominationVault>(LOCAL_STORAGE_KEYS.VAULT, initialVault);
 
@@ -65,6 +66,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     dispatch({ type: 'SET_VAULT', payload: vault });
     dispatch({ type: 'INITIALIZE' });
   }, [user, transactions, vault]);
+
+  const login = (userToLogin: User) => {
+    setUser(userToLogin);
+  }
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
     if (!state.user) throw new Error("User not loaded");
@@ -106,7 +111,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     // Note: This is a simplified update. It does not recalculate vault balances for simplicity.
     // A more robust solution would re-calculate balances or handle the diff.
     const newTransactions = state.transactions.map(tx => 
-      tx.id === transactionId ? { ...tx, ...updates } : tx
+      tx.id === transactionId ? { ...tx, ...updates, id: tx.id, type: tx.type } as Transaction : tx
     );
     setTransactions(newTransactions);
   };
@@ -123,6 +128,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     ...state,
+    login,
     addTransaction,
     updateTransaction,
     updateVault,

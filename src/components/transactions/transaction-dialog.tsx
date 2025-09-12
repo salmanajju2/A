@@ -38,7 +38,6 @@ const formSchema = z.object({
   companyName: z.string().optional(),
   location: z.string().optional(),
   scope: z.enum(['global', 'company']).optional(),
-  upiTransactionId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
@@ -58,7 +57,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
       companyName: '',
       location: '',
       scope: 'global',
-      upiTransactionId: '',
       ...defaults
     },
   });
@@ -79,7 +77,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         location: defaults?.location || '',
         denominations: {},
         scope: defaults?.scope || 'global',
-        upiTransactionId: '',
         ...transaction
       };
       form.reset(initialValues);
@@ -127,6 +124,10 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
     }
   };
+
+  if (!open) {
+    return null;
+  }
 
   if (!currentTransactionType) {
     if (open) {
@@ -219,22 +220,6 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     </FormItem>
                   )}
                 />
-                 {currentTransactionType.includes('UPI') && (
-                    <FormField
-                      control={form.control}
-                      name="upiTransactionId"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>UPI Transaction ID</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter UPI Transaction ID" {...field} value={field.value || ''} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                )}
-                
               </div>
             </ScrollArea>
             <DialogFooter className="pt-4">
