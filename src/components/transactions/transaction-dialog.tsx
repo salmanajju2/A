@@ -38,6 +38,7 @@ const formSchema = z.object({
   companyName: z.string().optional(),
   location: z.string().optional(),
   scope: z.enum(['global', 'company']).optional(),
+  upiTransactionId: z.string().optional(),
 });
 
 type TransactionFormValues = z.infer<typeof formSchema>;
@@ -47,7 +48,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   const { toast } = useToast();
   
   const isEditMode = !!transaction;
-  const currentTransactionType = isEditMode ? transaction.type : transactionType;
+  const currentTransactionType = transaction ? transaction.type : transactionType;
   
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(formSchema),
@@ -57,8 +58,16 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
       companyName: '',
       location: '',
       scope: 'global',
+      upiTransactionId: '',
       ...defaults
     },
+  });
+
+  const isCashTransaction = currentTransactionType?.includes('CASH');
+
+  const watchedDenominations = useWatch({
+    control: form.control,
+    name: "denominations",
   });
 
   useEffect(() => {
@@ -70,6 +79,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         location: transaction.location,
         denominations: transaction.denominations,
         scope: transaction.scope || 'global',
+        upiTransactionId: transaction.upiTransactionId,
       });
     } else if (open) {
       form.reset({
@@ -79,24 +89,11 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         location: defaults?.location || '',
         denominations: {},
         scope: defaults?.scope || 'global',
+        upiTransactionId: '',
       });
     }
   }, [open, transaction, form, defaults]);
-
-  if (!currentTransactionType) {
-    if (open) {
-      console.error("TransactionDialog: No transaction type provided.");
-    }
-    return null;
-  }
-
-  const isCashTransaction = currentTransactionType.includes('CASH');
-
-  const watchedDenominations = useWatch({
-    control: form.control,
-    name: "denominations",
-  });
-
+  
   useEffect(() => {
     if (isCashTransaction && watchedDenominations) {
         const total = Object.entries(watchedDenominations).reduce((acc, [key, count]) => {
@@ -110,13 +107,17 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
 
   const onSubmit = (data: TransactionFormValues) => {
     try {
+        if(!currentTransactionType) {
+            throw new Error("Cannot submit without a transaction type.");
+        }
+
         if(isCashTransaction && data.amount !== form.getValues('amount')) {
             toast({ variant: 'destructive', title: 'Mismatch', description: 'Denomination total does not match amount.'});
             return;
         }
 
         if (isEditMode && transaction) {
-            updateTransaction(transaction.id, data);
+            updateTransaction(transaction.id, { ...transaction, ...data });
             toast({
                 title: 'Transaction Updated',
                 description: `Transaction ${transaction.id} has been updated.`,
@@ -137,6 +138,13 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
         toast({ variant: 'destructive', title: 'Error', description: (error as Error).message });
     }
   };
+
+  if (!currentTransactionType) {
+    if (open) {
+      console.error("TransactionDialog: No transaction type provided.");
+    }
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -222,6 +230,21 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
                     </FormItem>
                   )}
                 />
+                 {!isCashTransaction && (
+                    <FormField
+                      control={form.control}
+                      name="upiTransactionId"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>UPI Transaction ID</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter UPI Transaction ID" {...field} value={field.value || ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                )}
                 
               </div>
             </ScrollArea>
