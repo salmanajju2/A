@@ -13,15 +13,12 @@ import {
   User,
   Building,
   MapPin,
-  Mail,
-  FileText,
   Trash,
   Pencil,
   Hash,
 } from 'lucide-react';
 import type { Transaction } from '@/lib/types';
 import { formatCurrency, formatDate } from '@/lib/helpers';
-import { numberToWords } from '@/lib/number-to-words';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import { DENOMINATIONS } from '@/lib/constants';
@@ -37,7 +34,6 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
   const { toast } = useToast();
 
   const isCredit = transaction.type.includes('CREDIT');
-  const amountInWords = numberToWords(transaction.amount);
   const isCash = transaction.type.includes('CASH');
 
   const handleDelete = () => {
@@ -83,8 +79,6 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
             <InfoLine icon={User} label="Customer" value={transaction.customerName} />
             <InfoLine icon={Building} label="Company" value={transaction.companyName} />
             <InfoLine icon={MapPin} label="Location" value={transaction.location} />
-            <InfoLine icon={Mail} label="User Email" value={transaction.recordedBy} />
-            <InfoLine icon={FileText} label="In Words" value={amountInWords} />
         </div>
 
         {isCash && transaction.denominations && (
