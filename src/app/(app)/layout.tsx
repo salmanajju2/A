@@ -4,8 +4,6 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAppContext } from '@/context/app-context';
 import { Loader2 } from 'lucide-react';
-import { SidebarProvider, Sidebar, SidebarInset } from '@/components/ui/sidebar';
-import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Header } from '@/components/layout/header';
 import { Toaster } from '@/components/ui/toaster';
 
@@ -34,16 +32,12 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarNav />
-      </Sidebar>
-      <SidebarInset>
+    <div className="flex min-h-screen w-full flex-col">
         <Header />
-        <main className="flex-1 p-4 md:p-6 lg:p-8">
+        <main className="flex flex-1 flex-col p-4 md:p-6 lg:p-8">
           {children}
         </main>
-      </SidebarInset>
-    </SidebarProvider>
+        <Toaster />
+    </div>
   );
 }
