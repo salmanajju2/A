@@ -139,38 +139,38 @@ function CompanyTransactionsContent() {
 
         const head = [
             [
-                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } },
-                { content: 'Cash', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: 'UPI', colSpan: 4, styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold' } }
+                { content: 'Customer Name', rowSpan: 2 },
+                { content: 'Cash', colSpan: 4 },
+                { content: 'UPI', colSpan: 4 },
+                { content: 'Total Credit', rowSpan: 2 }
             ],
             [
-                { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '1st', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '2nd', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '3rd', styles: { halign: 'center', fontStyle: 'bold' } },
-                { content: '4th', styles: { halign: 'center', fontStyle: 'bold' } }
+                { content: '1st' },
+                { content: '2nd' },
+                { content: '3rd' },
+                { content: '4th' },
+                { content: '1st' },
+                { content: '2nd' },
+                { content: '3rd' },
+                { content: '4th' }
             ]
         ];
 
         const foot = [
              [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
+                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { halign: 'right' } }
             ],
             [
                 { content: 'Entry', styles: { fontStyle: 'bold' } },
-                { content: debitEntries[0] ? formatCurrency(debitEntries[0], { symbol: '' }) : '', styles: { fontStyle: 'bold', halign: 'right' } },
-                { content: debitEntries[1] ? formatCurrency(debitEntries[1], { symbol: '' }) : '', styles: { fontStyle: 'bold', halign: 'right' } },
+                { content: debitEntries[0] ? formatCurrency(debitEntries[0], { symbol: '' }) : '', styles: { halign: 'right' } },
+                { content: debitEntries[1] ? formatCurrency(debitEntries[1], { symbol: '' }) : '', styles: { halign: 'right' } },
                 '', '', '', '', '', '',
-                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
+                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { halign: 'right' } }
             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fontStyle: 'bold', halign: 'right' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
+                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { halign: 'right' } }
             ]
         ];
 
@@ -194,7 +194,7 @@ function CompanyTransactionsContent() {
             },
             footStyles: {
                 fontStyle: 'bold',
-                textColor: [0,0,0],
+                halign: 'right',
             },
             columnStyles: {
                 0: { halign: 'left' },
@@ -206,11 +206,8 @@ function CompanyTransactionsContent() {
                  if (data.section === 'body') {
                     data.cell.styles.fontStyle = 'normal';
                  }
-                 if(data.section === 'foot' && data.row.index === 0 && data.column.index === 0) {
-                    data.cell.styles.halign = 'right';
-                 }
-                 if(data.section === 'foot' && data.row.index === 2 && data.column.index === 0) {
-                    data.cell.styles.halign = 'right';
+                 if(data.section === 'foot' && data.row.index === 1 && data.column.index === 0) {
+                     data.cell.styles.halign = 'left';
                  }
             }
         });
@@ -354,3 +351,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
