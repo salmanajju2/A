@@ -31,10 +31,14 @@ function CompanyTransactionsContent() {
 
     const filteredTransactions = useMemo(() => {
         if (!company) return [];
-        // Show all transactions for this company, including global and company-scoped ones.
         return transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
+
+            if (t.scope === 'company') {
+                return companyMatch && locationMatch;
+            }
+            
             return companyMatch && locationMatch;
         });
     }, [transactions, company, location]);
@@ -71,7 +75,7 @@ function CompanyTransactionsContent() {
                  <div className="flex items-center gap-2">
                     <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                         <PlusCircle className="mr-2 h-4 w-4" />
-                        payment credit ho
+                        ye payment esi page pr show ho
                     </Button>
                     <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                          <PlusCircle className="mr-2 h-4 w-4" />

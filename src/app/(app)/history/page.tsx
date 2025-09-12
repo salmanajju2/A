@@ -1,5 +1,5 @@
 'use client';
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useMemo } from 'react';
 import { TransactionCard } from '@/components/history/transaction-card';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent } from '@/components/ui/card';
@@ -8,7 +8,12 @@ import type { Transaction } from '@/lib/types';
 
 function HistoryPageContent() {
     const { transactions } = useAppContext();
-    const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(transactions);
+
+    const globalTransactions = useMemo(() => {
+        return transactions.filter(t => !t.scope || t.scope === 'global');
+    }, [transactions]);
+    
+    const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(globalTransactions);
     const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
 
     const handleToggleAll = (isChecked: boolean) => {
@@ -30,7 +35,7 @@ function HistoryPageContent() {
     return (
         <div className="flex flex-col gap-4">
             <HistoryToolbar 
-                transactions={transactions} 
+                transactions={globalTransactions} 
                 onFilter={setFilteredTransactions}
                 selectedCount={selectedTransactions.length}
                 totalCount={filteredTransactions.length}
