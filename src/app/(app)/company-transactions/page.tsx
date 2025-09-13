@@ -184,9 +184,7 @@ function CompanyTransactionsContent() {
                 font: 'helvetica',
                 fontStyle: 'bold',
                 lineWidth: 0.1,
-                lineColor: [255, 255, 255],
-                textColor: [255, 255, 255],
-                fillColor: '#008080'
+                lineColor: [0, 0, 0],
             },
             headStyles: {
                 halign: 'center',
@@ -203,13 +201,6 @@ function CompanyTransactionsContent() {
                 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
                 9: { halign: 'right' },
             },
-             didParseCell: (data) => {
-                if (data.section === 'body') {
-                    data.cell.styles.fillColor = '#FFFFFF';
-                    data.cell.styles.textColor = '#000000';
-                    data.cell.styles.lineColor = '#008080';
-                }
-             }
         });
     
         doc.save(`${company}_${location ? location + '_' : ''}${new Date().toISOString().split('T')[0]}.pdf`);
