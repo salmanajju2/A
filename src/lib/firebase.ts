@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApps } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, User } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, User, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -21,11 +21,11 @@ if (!getApps().length) {
 }
 
 export const auth = getAuth(app);
-const provider = new GoogleAuthProvider();
+const googleProvider = new GoogleAuthProvider();
 
 export const signInWithGoogle = (): Promise<User> => {
     return new Promise((resolve, reject) => {
-        signInWithPopup(auth, provider)
+        signInWithPopup(auth, googleProvider)
             .then((result) => {
                 resolve(result.user);
             })
@@ -34,3 +34,27 @@ export const signInWithGoogle = (): Promise<User> => {
             });
     });
 };
+
+export const signInWithEmail = (email, password): Promise<User> => {
+    return new Promise((resolve, reject) => {
+        signInWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                resolve(userCredential.user);
+            })
+            .catch((error) => {
+                reject(error);
+            });
+    });
+}
+
+export const createUserWithEmail = (email, password): Promise<User> => {
+    return new Promise((resolve, reject) => {
+        createUserWithEmailAndPassword(auth, email, password)
+            .then((userCredential) => {
+                resolve(userCredential.user);
+            })
+            .catch((error) => {
+                reject(error);
+            });
+    });
+}

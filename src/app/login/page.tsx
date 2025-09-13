@@ -28,7 +28,7 @@ export default function LoginPage() {
               Welcome to ALI ENTERPRISES
             </h1>
             <p className="text-sm text-muted-foreground">
-              Sign in with Google to access your account.
+              Sign in to your account to continue.
             </p>
         </div>
         <LoginForm />
