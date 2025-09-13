@@ -17,7 +17,6 @@ import { AlertTriangle, Save } from 'lucide-react';
 const denominationSchema = z.record(z.coerce.number().min(0).int());
 const vaultSchema = z.object({
   denominations: denominationSchema,
-  upiBalance: z.coerce.number().min(0),
 });
 
 type VaultFormValues = z.infer<typeof vaultSchema>;
@@ -29,8 +28,7 @@ export function VaultEditor() {
   const form = useForm<VaultFormValues>({
     resolver: zodResolver(vaultSchema),
     defaultValues: {
-      denominations: vault.denominations,
-      upiBalance: vault.upiBalance,
+      denominations: vault.denominations
     },
   });
 
@@ -45,10 +43,14 @@ export function VaultEditor() {
   }, 0);
 
   const onSubmit = (data: VaultFormValues) => {
-    updateVault(data);
+    // We only update the denominations, preserving the UPI balance
+    updateVault({
+        ...vault,
+        denominations: data.denominations,
+    });
     toast({
       title: 'Vault Updated',
-      description: 'Your denomination and UPI balances have been saved.',
+      description: 'Your denomination balances have been saved.',
     });
   };
 
@@ -71,7 +73,7 @@ export function VaultEditor() {
                     <FormItem>
                       <FormLabel>{denom.label}</FormLabel>
                       <FormControl>
-                        <Input type="number" {...field} />
+                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} value={field.value || ''} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -83,28 +85,6 @@ export function VaultEditor() {
               <p className="text-muted-foreground">Calculated Cash Total</p>
               <p className="text-2xl font-bold font-headline">{formatCurrency(cashTotal)}</p>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>UPI Balance</CardTitle>
-            <CardDescription>Adjust your digital balance.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FormField
-              control={form.control}
-              name="upiBalance"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>UPI Balance (INR)</FormLabel>
-                  <FormControl>
-                    <Input type="number" step="0.01" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </CardContent>
         </Card>
 

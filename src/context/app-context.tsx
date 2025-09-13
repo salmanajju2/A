@@ -20,7 +20,7 @@ const defaultUser: User = { id: '1', email: 'user@example.com', name: 'Ali Enter
 type AppContextType = AppState & {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => void;
   updateTransaction: (transactionId: string, updates: TransactionUpdatePayload) => void;
-  updateVault: (newVault: DenominationVault) => void;
+  updateVault: (newVault: Partial<DenominationVault>) => void;
   deleteTransactions: (transactionIds: string[]) => void;
   login: (user: User) => void;
 };
@@ -84,26 +84,27 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     const newTransactions = [newTransaction, ...state.transactions];
     setTransactions(newTransactions);
 
-    // This is a simplified vault update. For production, you'd want a more robust, atomic update mechanism.
-    const newVault = JSON.parse(JSON.stringify(state.vault));
-    if (newTransaction.type.includes('CASH')) {
-      const denominations = newTransaction.denominations || {};
-      for (const key in denominations) {
-        const denominationKey = key as keyof DenominationCount;
-        if(newTransaction.type === 'CASH_CREDIT') {
-          newVault.denominations[denominationKey] = (newVault.denominations[denominationKey] || 0) + (denominations[denominationKey] || 0);
-        } else { // CASH_DEBIT
-          newVault.denominations[denominationKey] = (newVault.denominations[denominationKey] || 0) - (denominations[denominationKey] || 0);
+    // Create a deep copy of the vault to avoid mutation issues.
+    const newVault = JSON.parse(JSON.stringify(state.vault)) as DenominationVault;
+
+    if (newTransaction.type === 'CASH_CREDIT' && newTransaction.denominations) {
+        for (const key of Object.keys(newTransaction.denominations)) {
+            const denomKey = key as keyof DenominationCount;
+            const count = newTransaction.denominations[denomKey] || 0;
+            newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) + count;
         }
-      }
-    }
-    if (newTransaction.type.includes('UPI')) {
-       if(newTransaction.type === 'UPI_CREDIT') {
-          newVault.upiBalance += newTransaction.amount;
-        } else { // UPI_DEBIT
-          newVault.upiBalance -= newTransaction.amount;
+    } else if (newTransaction.type === 'CASH_DEBIT' && newTransaction.denominations) {
+        for (const key of Object.keys(newTransaction.denominations)) {
+            const denomKey = key as keyof DenominationCount;
+            const count = newTransaction.denominations[denomKey] || 0;
+            newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) - count;
         }
+    } else if (newTransaction.type === 'UPI_CREDIT') {
+        newVault.upiBalance += newTransaction.amount;
+    } else if (newTransaction.type === 'UPI_DEBIT') {
+        newVault.upiBalance -= newTransaction.amount;
     }
+    
     setVault(newVault);
   };
   
@@ -116,8 +117,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     setTransactions(newTransactions);
   };
   
-  const updateVault = (newVault: DenominationVault) => {
-    setVault(newVault);
+  const updateVault = (newVaultData: Partial<DenominationVault>) => {
+    const updatedVault = { ...state.vault, ...newVaultData };
+    setVault(updatedVault);
   };
 
   const deleteTransactions = (transactionIds: string[]) => {
