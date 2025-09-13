@@ -156,23 +156,17 @@ function CompanyTransactionsContent() {
 
         const foot = [
              [
-                { content: 'TOTAL' },
-                { content: '' }, { content: '' }, { content: '' }, { content: '' }, { content: '' },
-                { content: '' }, { content: '' }, { content: '' }, { content: '' }, { content: '' },
+                { content: 'TOTAL', colSpan: 11, styles: { halign: 'right' } },
                 { content: totalCredit.toFixed(0), styles: { textColor: [0, 128, 0] } } // Green
             ],
             [
                 { content: 'ENTRY' },
-                { content: entryTransactions[0] ? entryTransactions[0].amount.toFixed(0) : '', styles: { textColor: [255, 0, 0] } },
-                { content: entryTransactions[1] ? entryTransactions[1].amount.toFixed(0) : '', styles: { textColor: [255, 0, 0] } },
-                { content: '' }, { content: '' }, { content: '' },
-                { content: '' }, { content: '' }, { content: '' }, { content: '' }, { content: '' },
+                ...debitEntries,
+                { content: '', colSpan: 5},
                 { content: totalDebit.toFixed(0), styles: { textColor: [255, 0, 0] } } // Red
             ],
             [
-                { content: 'CLOSING BALANCE' },
-                { content: '' }, { content: '' }, { content: '' }, { content: '' }, { content: '' },
-                { content: '' }, { content: '' }, { content: '' }, { content: '' }, { content: '' },
+                { content: 'CLOSING BALANCE', colSpan: 11, styles: { halign: 'right' } },
                 { content: closingBalance.toFixed(0), styles: { textColor: [0, 128, 0] } } // Green
             ]
         ];
@@ -206,14 +200,20 @@ function CompanyTransactionsContent() {
                 11: { halign: 'right', fontStyle: 'bold' },
             },
             didParseCell: function (data) {
+                // Custom alignment for footer
                 if (data.section === 'foot') {
-                     data.cell.styles.halign = 'right';
-                     if(data.column.index > 0 && data.column.index < 11) {
-                         data.cell.styles.halign = 'right';
-                     }
-                      if (data.column.index === 0) {
+                    data.cell.styles.halign = 'right';
+                    // The first column should be left aligned
+                    if (data.column.index === 0) {
                          data.cell.styles.halign = 'left';
-                     }
+                    }
+                    // For the "ENTRY" row, specific columns should be right aligned.
+                    if (data.row.index === 1) { // ENTRY row
+                        if (data.column.index > 0 && data.column.index <= 5) {
+                             data.cell.styles.halign = 'right';
+                             data.cell.styles.textColor = [255, 0, 0];
+                        }
+                    }
                 }
             }
         });
@@ -357,5 +357,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
