@@ -76,99 +76,100 @@ function CompanyTransactionsContent() {
     const handleDownloadPdf = () => {
         const doc = new jsPDF('landscape') as jsPDFWithAutoTable;
         
-        const pageTitle = `REPORT ${company} ${location || ''}`.trim();
-        const generatedDate = `DATE AND TIME ${new Date().toLocaleString('en-IN', {
+        const mainTitle = `Report for ${company} ${location || ''}`.trim();
+        const generatedDate = `Generated on: ${new Date().toLocaleString('en-IN', {
             day: '2-digit',
             month: '2-digit',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-            hour12: false
+            second: '2-digit',
+            hour12: true
         }).replace(',', '')}`;
-
+        
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(255, 0, 0); // Red
-        doc.text(pageTitle, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
+        doc.setTextColor(0, 0, 0);
+        doc.text(mainTitle, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
         
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0); // Black
-        doc.text(generatedDate, doc.internal.pageSize.getWidth() - 20, 25, { align: 'right' });
+        doc.setFont('helvetica', 'normal');
+        doc.text(generatedDate, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
 
-        const customerCredits: { [key: string]: { cash: (number | string)[], upi: (number | string)[] } } = {};
+        const customerCredits: { [key: string]: { cash: (string | number)[], upi: (string | number)[] } } = {};
         const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
 
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
                 if (!customerCredits[tx.customerName]) {
-                    customerCredits[tx.customerName] = { cash: Array(5).fill(''), upi: Array(5).fill('') };
+                    customerCredits[tx.customerName] = { cash: Array(4).fill(''), upi: Array(4).fill('') };
                 }
                 const customer = customerCredits[tx.customerName];
                 const slots = tx.type === 'CASH_CREDIT' ? customer.cash : customer.upi;
                 const emptyIndex = slots.findIndex(c => c === '');
                 if (emptyIndex !== -1) {
-                    slots[emptyIndex] = tx.amount;
+                    slots[emptyIndex] = formatCurrency(tx.amount, { symbol: '₹' });
                 }
             }
         });
         
         let body = Object.entries(customerCredits).map(([name, data]) => {
-            const total = [...data.cash, ...data.upi].reduce((sum: number, val) => sum + (Number(val) || 0), 0);
+            const total = [...data.cash, ...data.upi].reduce((sum: number, val) => {
+                const num = parseFloat(String(val).replace(/[₹,]/g, ''));
+                return sum + (isNaN(num) ? 0 : num);
+            }, 0);
             return [
-                name.toUpperCase(),
+                name,
                 ...data.cash,
                 ...data.upi,
-                total > 0 ? total.toFixed(0) : '0'
+                total > 0 ? formatCurrency(total, { symbol: '₹' }) : ''
             ];
         });
-        
-        const requiredRows = 10;
+
+        const requiredRows = 12;
         while (body.length < requiredRows) {
-            body.push(['', '', '', '', '', '', '', '', '', '', '', '0']);
+            body.push(['', '', '', '', '', '', '', '', '', '']);
         }
 
-
-        const totalCredit = body.reduce((sum, row) => sum + (Number(row[11]) || 0), 0);
+        const totalCredit = body.reduce((sum, row) => {
+            const num = parseFloat(String(row[9]).replace(/[₹,]/g, ''));
+            return sum + (isNaN(num) ? 0 : num);
+        }, 0);
 
         const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
         const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
-        const debitEntries = Array(5).fill('');
-        entryTransactions.slice(0, 5).forEach((tx, i) => {
-            debitEntries[i] = tx.amount.toFixed(0);
-        });
         
+        const debitEntries: (string | number)[] = Array(8).fill('');
+        entryTransactions.slice(0, 3).forEach((tx, i) => {
+             // Place entries in 2nd, 3rd, 4th cash columns
+            debitEntries[i+1] = formatCurrency(tx.amount, { symbol: '₹' });
+        });
+
         const closingBalance = totalCredit - totalDebit;
         
         const head = [
             [
-                { content: 'NAME', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
-                { content: 'CASH', colSpan: 5, styles: { halign: 'center' } },
-                { content: 'UPI', colSpan: 5, styles: { halign: 'center' } },
-                { content: 'TOTAL', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
+                { content: 'Customer Name', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } },
+                { content: 'Cash', colSpan: 4, styles: { halign: 'center' } },
+                { content: 'UPI', colSpan: 4, styles: { halign: 'center' } },
+                { content: 'Total Credit', rowSpan: 2, styles: { halign: 'center', valign: 'middle' } }
             ],
-            [
-                '1st', '2st', '3st', '4st', '5st',
-                '1st', '2st', '3st', '4st', '5st'
-            ]
+            ['1st', '2nd', '3rd', '4th', '1st', '2nd', '3rd', '4th']
         ];
 
         const foot = [
-             [
-                { content: 'TOTAL', colSpan: 1, styles: { halign: 'left' } },
-                { content: '' , colSpan: 10, styles: { halign: 'right' } },
-                { content: totalCredit.toFixed(0), styles: { halign: 'right' } }
+            [
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
+                { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fillColor: '#e9fce9' } }
             ],
             [
-                { content: 'ENTRY' },
+                { content: 'Entry' },
                 ...debitEntries,
-                { content: '', colSpan: 5},
-                { content: totalDebit.toFixed(0), styles: { halign: 'right' } }
+                { content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fillColor: '#ffebee' } }
             ],
             [
-                { content: 'CLOSING BALANCE', colSpan: 1, styles: { halign: 'left' } },
-                { content: '', colSpan: 10, styles: { halign: 'right' } },
-                { content: closingBalance.toFixed(0), styles: { halign: 'right' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
+                { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fillColor: '#ffebee' } }
             ]
         ];
 
@@ -180,17 +181,17 @@ function CompanyTransactionsContent() {
             theme: 'grid',
             styles: {
                 font: 'helvetica',
-                fontStyle: 'bold',
                 lineWidth: 0.1,
                 lineColor: [0, 0, 0],
                 textColor: [0, 0, 0],
+                fontSize: 10,
             },
             headStyles: {
                 fillColor: '#FFFFFF',
                 textColor: [0, 0, 0],
+                fontStyle: 'bold',
                 halign: 'center',
                 valign: 'middle',
-                fontStyle: 'bold',
             },
             footStyles: {
                 fillColor: '#FFFFFF',
@@ -199,37 +200,16 @@ function CompanyTransactionsContent() {
             },
             columnStyles: {
                 0: { halign: 'left' },
-                1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' },
-                6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right' }, 10: { halign: 'right' },
-                11: { halign: 'right' },
+                1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' },
+                5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' },
+                9: { halign: 'right' },
             },
-             didParseCell: function (data) {
-                if (data.section === 'foot') {
-                     // TOTAL row
-                    if (data.row.index === 0) {
-                        if (data.column.index === 0) {
-                           data.cell.styles.halign = 'left';
-                           data.cell.colSpan = 11;
-                        }
-                    }
-                    // ENTRY row
-                    if (data.row.index === 1) {
-                         if (data.column.index === 0) {
-                           data.cell.styles.halign = 'left';
-                        } else if (data.column.index > 0 && data.column.index < 6) {
-                            data.cell.styles.halign = 'right';
-                        } else if (data.column.index === 11) {
-                            data.cell.styles.halign = 'right';
-                        } else {
-                            data.cell.styles.halign = 'center';
-                        }
-                    }
-                    // CLOSING BALANCE row
-                     if (data.row.index === 2) {
-                         if (data.column.index === 0) {
-                           data.cell.styles.halign = 'left';
-                           data.cell.colSpan = 11;
-                        }
+            didParseCell: (data) => {
+                 if (data.section === 'foot') {
+                    if (data.row.index === 1 && data.column.index > 0) {
+                         if (data.column.index <=8) {
+                             data.cell.styles.halign = 'right';
+                         }
                     }
                 }
             }
@@ -374,5 +354,7 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
