@@ -262,9 +262,9 @@ function CompanyTransactionsContent() {
                         </div>
                     </div>
                      <div className="flex items-center gap-2">
-                         <Button variant="outline" onClick={() => handleOpenDialog(isSatinCompany ? 'CASH_CREDIT' : 'UPI_CREDIT')}>
+                         <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                             <PlusCircle className="mr-2 h-4 w-4" />
-                            {isSatinCompany ? 'Add Cash' : 'Add UPI'}
+                            Add UPI
                         </Button>
                         <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
                              <PlusCircle className="mr-2 h-4 w-4" />
@@ -363,6 +363,8 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
 
