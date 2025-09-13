@@ -186,14 +186,14 @@ function CompanyTransactionsContent() {
                 textColor: [0, 0, 0],
             },
             headStyles: {
-                fillColor: '#008080',
+                fillColor: '#FFFFFF',
                 textColor: [0, 0, 0],
                 halign: 'center',
                 valign: 'middle',
                 fontStyle: 'bold',
             },
             footStyles: {
-                fillColor: '#008080',
+                fillColor: '#FFFFFF',
                 textColor: [0, 0, 0],
                 fontStyle: 'bold',
             },
