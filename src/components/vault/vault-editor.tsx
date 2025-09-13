@@ -3,8 +3,8 @@
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/context/app-context';
@@ -28,7 +28,7 @@ export function VaultEditor() {
   const form = useForm<VaultFormValues>({
     resolver: zodResolver(vaultSchema),
     defaultValues: {
-      denominations: vault.denominations
+      denominations: vault.denominations,
     },
   });
 
@@ -43,10 +43,8 @@ export function VaultEditor() {
   }, 0);
 
   const onSubmit = (data: VaultFormValues) => {
-    // We only update the denominations, preserving the UPI balance
     updateVault({
-        ...vault,
-        denominations: data.denominations,
+      denominations: data.denominations,
     });
     toast({
       title: 'Vault Updated',
@@ -60,28 +58,38 @@ export function VaultEditor() {
         <Card>
           <CardHeader>
             <CardTitle>Cash Denominations</CardTitle>
-            <CardDescription>Adjust the count for each note.</CardDescription>
+            <CardDescription>Adjust the count for each note in your vault.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-              {DENOMINATIONS.map((denom) => (
-                <FormField
-                  key={denom.value}
-                  control={form.control}
-                  name={`denominations.d${denom.value}`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{denom.label}</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value) || 0)} value={field.value || ''} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              ))}
+             <div className="space-y-2 rounded-lg border p-4">
+                {DENOMINATIONS.map((denom) => (
+                    <FormField
+                    key={denom.value}
+                    control={form.control}
+                    name={`denominations.d${denom.value}`}
+                    render={({ field }) => (
+                        <FormItem>
+                        <div className="flex items-center gap-4">
+                            <FormLabel className="w-16 flex-shrink-0 font-medium">{denom.label}</FormLabel>
+                            <FormControl>
+                            <Input
+                                type="number"
+                                className="text-center"
+                                {...field}
+                                onChange={e => field.onChange(parseInt(e.target.value) || 0)}
+                                value={field.value || ''}
+                            />
+                            </FormControl>
+                            <span className="w-24 text-right text-muted-foreground">
+                            = {formatCurrency((field.value || 0) * denom.value)}
+                            </span>
+                        </div>
+                        </FormItem>
+                    )}
+                    />
+                ))}
             </div>
-            <div className="pt-4 text-right">
+            <div className="pt-4 text-right border-t">
               <p className="text-muted-foreground">Calculated Cash Total</p>
               <p className="text-2xl font-bold font-headline">{formatCurrency(cashTotal)}</p>
             </div>
