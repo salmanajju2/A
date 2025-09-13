@@ -150,7 +150,8 @@ export default function CompanySummaryPage() {
                       <TableCell className="text-right">{formatCurrency(summary.credit)}</TableCell>
                       <TableCell className="text-right">{formatCurrency(summary.debit)}</TableCell>
                       <TableCell className={cn(
-                        "text-right font-bold"
+                        "text-right font-bold",
+                         summary.net >= 0 ? 'text-green-500' : 'text-red-500'
                       )}>
                         {formatCurrency(summary.net)}
                       </TableCell>
