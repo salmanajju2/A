@@ -12,7 +12,7 @@ import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { TRANSACTION_TYPES } from '@/lib/constants';
-import { formatCurrency } from '@/lib/helpers';
+import { formatCurrency, formatDate } from '@/lib/helpers';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
