@@ -17,18 +17,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
     autoTable: (options: any) => jsPDF;
-}
-
-interface CustomerSummary {
-    cashCredit: number;
-    upiCredit: number;
-    totalCredit: number;
 }
 
 function CompanyTransactionsContent() {
@@ -46,15 +39,29 @@ function CompanyTransactionsContent() {
 
     const filteredTransactions = useMemo(() => {
         if (!company) return [];
-        return transactions.filter(t => {
+        let filtered = transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
             return companyMatch && locationMatch;
-        }).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    }, [transactions, company, location]);
+        });
+
+        if (searchTerm) {
+            filtered = filtered.filter(t => 
+                t.customerName?.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        return filtered.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [transactions, company, location, searchTerm]);
 
     const summary = useMemo(() => {
-        return filteredTransactions.reduce((acc, tx) => {
+        const txnsToSummarize = transactions.filter(t => {
+            const companyMatch = t.companyName === company;
+            const locationMatch = !location || t.location === location;
+            return companyMatch && locationMatch;
+        });
+
+        return txnsToSummarize.reduce((acc, tx) => {
             if (tx.type.includes('CREDIT')) {
                 acc.credit += tx.amount;
             } else {
@@ -63,37 +70,7 @@ function CompanyTransactionsContent() {
             acc.net = acc.credit - acc.debit;
             return acc;
         }, { credit: 0, debit: 0, net: 0 });
-    }, [filteredTransactions]);
-
-    const customerSummary = useMemo(() => {
-        const summary: Record<string, CustomerSummary> = {};
-
-        filteredTransactions.forEach((tx) => {
-            if (tx.type.includes('CREDIT') && tx.customerName) {
-                if (!summary[tx.customerName]) {
-                    summary[tx.customerName] = { cashCredit: 0, upiCredit: 0, totalCredit: 0 };
-                }
-
-                if (tx.type === 'CASH_CREDIT') {
-                    summary[tx.customerName].cashCredit += tx.amount;
-                } else if (tx.type === 'UPI_CREDIT') {
-                    summary[tx.customerName].upiCredit += tx.amount;
-                }
-                summary[tx.customerName].totalCredit = summary[tx.customerName].cashCredit + summary[tx.customerName].upiCredit;
-            }
-        });
-
-        const sortedSummary = Object.entries(summary).sort((a, b) => a[0].localeCompare(b[0]));
-        
-        if (!searchTerm) {
-            return sortedSummary;
-        }
-
-        return sortedSummary.filter(([name]) => 
-            name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-    }, [filteredTransactions, searchTerm]);
+    }, [transactions, company, location]);
 
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
@@ -134,7 +111,8 @@ function CompanyTransactionsContent() {
         doc.text(generatedDate, doc.internal.pageSize.getWidth() / 2, 22, { align: 'center' });
 
         const customerCredits: { [key: string]: { cash: (string | number)[], upi: (string | number)[] } } = {};
-        const sortedTransactions = [...filteredTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
+        const allTransactions = transactions.filter(t => t.companyName === company && (!location || t.location === location));
+        const sortedTransactions = [...allTransactions].sort((a, b) => (a.customerName || 'zzz').localeCompare(b.customerName || 'zzz'));
 
         sortedTransactions.forEach(tx => {
             if (tx.type.includes('CREDIT') && tx.customerName) {
@@ -173,7 +151,7 @@ function CompanyTransactionsContent() {
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
-        const entryTransactions = filteredTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
+        const entryTransactions = allTransactions.filter(tx => tx.type === 'COMPANY_ADJUSTMENT_DEBIT');
         const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
         
         const debitEntries: (string | number)[] = Array(8).fill('');
@@ -275,12 +253,13 @@ function CompanyTransactionsContent() {
     }
     
     const pageTitle = `${company} ${location || ''}`.trim();
+    const totalTransactions = transactions.filter(t => t.companyName === company && (!location || t.location === location)).length;
 
     return (
         <div className="flex flex-col gap-8">
             <PageHeader
                 title={pageTitle}
-                description={`A summary of ${filteredTransactions.length} transactions.`}
+                description={`A summary of ${totalTransactions} transactions.`}
             >
                 <div className='flex flex-col gap-4 items-end'>
                     <div className="flex gap-8 text-sm pt-2">
@@ -317,7 +296,7 @@ function CompanyTransactionsContent() {
             
             <Card>
                 <CardHeader>
-                    <CardTitle>Customer Credit Summary</CardTitle>
+                    <CardTitle>Transaction History</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="mb-4">
@@ -327,42 +306,6 @@ function CompanyTransactionsContent() {
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
                     </div>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Customer Name</TableHead>
-                                <TableHead className="text-right">Total Cash Credit</TableHead>
-                                <TableHead className="text-right">Total UPI Credit</TableHead>
-                                <TableHead className="text-right font-bold">Total Credit</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {customerSummary.length > 0 ? (
-                                customerSummary.map(([name, summary]) => (
-                                    <TableRow key={name}>
-                                        <TableCell className="font-medium">{name}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(summary.cashCredit)}</TableCell>
-                                        <TableCell className="text-right">{formatCurrency(summary.upiCredit)}</TableCell>
-                                        <TableCell className="text-right font-bold">{formatCurrency(summary.totalCredit)}</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">
-                                        No customer credit data found.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Transaction History</CardTitle>
-                </CardHeader>
-                <CardContent>
                     <div className="space-y-4">
                         {filteredTransactions.length > 0 ? (
                             filteredTransactions.map((tx) => (
@@ -414,7 +357,7 @@ function CompanyTransactionsContent() {
                                 </Collapsible>
                             ))
                         ) : (
-                            <p className="text-center text-muted-foreground py-8">No transactions found for this company and location.</p>
+                            <p className="text-center text-muted-foreground py-8">No transactions found matching your search.</p>
                         )}
                     </div>
                 </CardContent>
@@ -443,5 +386,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
