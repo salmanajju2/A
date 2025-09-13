@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, History, Landmark, Menu, Building } from 'lucide-react';
+import { LayoutDashboard, History, Landmark, Menu, Building, PlusCircle } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -22,7 +22,7 @@ import { Logo } from '../shared/logo';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 
 const menuItems = [
-  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Add Cash', icon: PlusCircle },
   { href: '/history', label: 'History', icon: History },
   { href: '/vault', label: 'Vault', icon: Landmark },
   { href: '/company-summary', label: 'Company Summary', icon: Building },
