@@ -3,15 +3,32 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
-import type { Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload } from '@/lib/types';
+import type { Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload, User } from '@/lib/types';
 import { initialTransactions, initialVault } from '@/lib/initial-data';
-import { auth } from '@/lib/firebase';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 
+// Demo user object to bypass Firebase auth
+const demoUser: User = {
+  uid: 'demouser01',
+  email: 'demo@example.com',
+  displayName: 'Demo User',
+  photoURL: 'https://picsum.photos/seed/demouser/200/200',
+  providerId: 'password',
+  emailVerified: true,
+  isAnonymous: false,
+  metadata: {},
+  providerData: [],
+  refreshToken: '',
+  tenantId: null,
+  delete: async () => {},
+  getIdToken: async () => '',
+  getIdTokenResult: async () => ({} as any),
+  reload: async () => {},
+  toJSON: () => ({}),
+};
+
 type AppState = {
-  user: FirebaseUser | null;
+  user: User | null;
   transactions: Transaction[];
   vault: DenominationVault;
   isInitialized: boolean;
@@ -28,10 +45,10 @@ type AppContextType = AppState & {
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
-  | { type: 'SET_USER'; payload: FirebaseUser | null }
+  | { type: 'SET_USER'; payload: User | null }
   | { type: 'SET_TRANSACTIONS'; payload: Transaction[] }
   | { type: 'SET_VAULT'; payload: DenominationVault }
-  | { type: 'INITIALIZE'; payload: { user: FirebaseUser | null } };
+  | { type: 'INITIALIZE'; payload: { user: User | null } };
 
 const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
@@ -61,14 +78,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      dispatch({ type: 'INITIALIZE', payload: { user } });
-      if (!user) {
-         router.push('/login');
-      }
-    });
-    return () => unsubscribe();
-  }, [router]);
+    // Use demo user instead of Firebase auth
+    dispatch({ type: 'INITIALIZE', payload: { user: demoUser } });
+  }, []);
 
   useEffect(() => {
     if (state.isInitialized) {
@@ -78,13 +90,51 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [state.isInitialized, transactions, vault]);
 
   const logout = async () => {
-    await signOut(auth);
+    // For demo, just clear the user and redirect
     dispatch({ type: 'SET_USER', payload: null });
+    router.push('/login');
   };
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
     if (!state.user || !state.user.email) {
-      throw new Error("User not loaded or email is missing");
+      // Fallback to demo user email if something goes wrong
+      const userEmail = state.user?.email || 'demo@example.com';
+      console.warn("User not fully loaded, using fallback email:", userEmail);
+      
+      const newTransaction: Transaction = {
+        ...transaction,
+        id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        recordedBy: userEmail,
+      };
+
+      const newTransactions = [newTransaction, ...state.transactions];
+      setTransactions(newTransactions);
+
+      // Create a deep copy of the vault to avoid mutation issues.
+      const newVault = JSON.parse(JSON.stringify(state.vault)) as DenominationVault;
+
+      if (newTransaction.type === 'CASH_CREDIT' && newTransaction.denominations) {
+          for (const key of Object.keys(newTransaction.denominations)) {
+              const denomKey = key as keyof DenominationCount;
+              const count = newTransaction.denominations[denomKey] || 0;
+              newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) + count;
+          }
+      } else if (newTransaction.type === 'CASH_DEBIT' && newTransaction.denominations) {
+          for (const key of Object.keys(newTransaction.denominations)) {
+              const denomKey = key as keyof DenominationCount;
+              const count = newTransaction.denominations[denomKey] || 0;
+              newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) - count;
+          }
+      } else if (newTransaction.type === 'UPI_CREDIT') {
+          newVault.upiBalance += newTransaction.amount;
+      } else if (newTransaction.type === 'UPI_DEBIT') {
+          newVault.upiBalance -= newTransaction.amount;
+      }
+      
+      setVault(newVault);
+      
+      return; // Exit after successful add
     }
     
     const newTransaction: Transaction = {
@@ -165,3 +215,5 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
+
+    

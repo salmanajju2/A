@@ -5,14 +5,15 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardFooter } from '../ui/card';
 import { signInWithGoogle } from '@/lib/firebase';
+import { useAppContext } from '@/context/app-context';
 
 export function LoginForm() {
   const router = useRouter();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { user } = useAppContext();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -35,6 +36,24 @@ export function LoginForm() {
       setIsLoading(false);
     }
   };
+  
+  // If in demo mode, show a different message
+  if (user && user.uid === 'demouser01') {
+      return (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-center text-sm text-muted-foreground">
+              You are currently logged in as a Demo User.
+            </p>
+          </CardContent>
+           <CardFooter>
+                <Button onClick={() => router.push('/dashboard')} className="w-full">
+                    Go to Dashboard
+                </Button>
+           </CardFooter>
+        </Card>
+      )
+  }
 
   return (
     <Card>
@@ -60,3 +79,5 @@ export function LoginForm() {
     </Card>
   );
 }
+
+    
