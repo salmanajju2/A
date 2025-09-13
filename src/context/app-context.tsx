@@ -1,31 +1,14 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useEffect, useMemo } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useEffect, useMemo, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
 import type { Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload, User } from '@/lib/types';
 import { initialTransactions, initialVault } from '@/lib/initial-data';
 import { useRouter } from 'next/navigation';
+import { auth } from '@/lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
 
-// Demo user object to bypass Firebase auth
-const demoUser: User = {
-  uid: 'demouser01',
-  email: 'demo@example.com',
-  displayName: 'Demo User',
-  photoURL: 'https://picsum.photos/seed/demouser/200/200',
-  providerId: 'password',
-  emailVerified: true,
-  isAnonymous: false,
-  metadata: {},
-  providerData: [],
-  refreshToken: '',
-  tenantId: null,
-  delete: async () => {},
-  getIdToken: async () => '',
-  getIdTokenResult: async () => ({} as any),
-  reload: async () => {},
-  toJSON: () => ({}),
-};
 
 type AppState = {
   user: User | null;
@@ -69,6 +52,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>(LOCAL_STORAGE_KEYS.TRANSACTIONS, initialTransactions);
   const [vault, setVault] = useLocalStorage<DenominationVault>(LOCAL_STORAGE_KEYS.VAULT, initialVault);
+  const [lastUserId, setLastUserId] = useLocalStorage<string | null>(LOCAL_STORAGE_KEYS.LAST_USER_ID, null);
+
 
   const [state, dispatch] = useReducer(appReducer, {
     user: null,
@@ -77,10 +62,30 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     isInitialized: false,
   });
 
+  const resetDataForNewUser = useCallback(() => {
+    setTransactions(initialTransactions);
+    setVault(initialVault);
+    dispatch({ type: 'SET_TRANSACTIONS', payload: initialTransactions });
+    dispatch({ type: 'SET_VAULT', payload: initialVault });
+  }, [setTransactions, setVault]);
+  
   useEffect(() => {
-    // Use demo user instead of Firebase auth
-    dispatch({ type: 'INITIALIZE', payload: { user: demoUser } });
-  }, []);
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      if (user) {
+        if (lastUserId && lastUserId !== user.uid) {
+            // New user has logged in, reset data
+            resetDataForNewUser();
+        }
+        setLastUserId(user.uid);
+      } else {
+        // If user logs out, we can clear lastUserId
+        setLastUserId(null);
+      }
+      dispatch({ type: 'INITIALIZE', payload: { user } });
+    });
+  
+    return () => unsubscribe();
+  }, [lastUserId, setLastUserId, resetDataForNewUser]);
 
   useEffect(() => {
     if (state.isInitialized) {
@@ -90,51 +95,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }, [state.isInitialized, transactions, vault]);
 
   const logout = async () => {
-    // For demo, just clear the user and redirect
+    await auth.signOut();
     dispatch({ type: 'SET_USER', payload: null });
     router.push('/login');
   };
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
     if (!state.user || !state.user.email) {
-      // Fallback to demo user email if something goes wrong
-      const userEmail = state.user?.email || 'demo@example.com';
-      console.warn("User not fully loaded, using fallback email:", userEmail);
-      
-      const newTransaction: Transaction = {
-        ...transaction,
-        id: `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: new Date().toISOString(),
-        recordedBy: userEmail,
-      };
-
-      const newTransactions = [newTransaction, ...state.transactions];
-      setTransactions(newTransactions);
-
-      // Create a deep copy of the vault to avoid mutation issues.
-      const newVault = JSON.parse(JSON.stringify(state.vault)) as DenominationVault;
-
-      if (newTransaction.type === 'CASH_CREDIT' && newTransaction.denominations) {
-          for (const key of Object.keys(newTransaction.denominations)) {
-              const denomKey = key as keyof DenominationCount;
-              const count = newTransaction.denominations[denomKey] || 0;
-              newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) + count;
-          }
-      } else if (newTransaction.type === 'CASH_DEBIT' && newTransaction.denominations) {
-          for (const key of Object.keys(newTransaction.denominations)) {
-              const denomKey = key as keyof DenominationCount;
-              const count = newTransaction.denominations[denomKey] || 0;
-              newVault.denominations[denomKey] = (newVault.denominations[denomKey] || 0) - count;
-          }
-      } else if (newTransaction.type === 'UPI_CREDIT') {
-          newVault.upiBalance += newTransaction.amount;
-      } else if (newTransaction.type === 'UPI_DEBIT') {
-          newVault.upiBalance -= newTransaction.amount;
-      }
-      
-      setVault(newVault);
-      
-      return; // Exit after successful add
+      throw new Error("User is not authenticated. Cannot add transaction.");
     }
     
     const newTransaction: Transaction = {
@@ -202,7 +170,12 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   }), [state]);
 
   if (!state.isInitialized) {
-    return null; // Or a loading spinner
+    // You can return a global loading spinner here
+    return (
+        <div className="flex min-h-screen w-full flex-col items-center justify-center">
+            <div>Loading Application...</div>
+        </div>
+    );
   }
 
   return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
@@ -215,5 +188,3 @@ export const useAppContext = (): AppContextType => {
   }
   return context;
 };
-
-    

@@ -56,6 +56,7 @@ export const LOCAL_STORAGE_KEYS = {
   USER: 'denomination-depot-user',
   TRANSACTIONS: 'denomination-depot-transactions',
   VAULT: 'denomination-depot-vault',
+  LAST_USER_ID: 'denomination-depot-last-user-id',
 };
 
     
