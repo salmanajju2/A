@@ -121,7 +121,7 @@ export default function CompanySummaryPage() {
       <Card>
         <CardContent className="pt-6">
           <Tabs value={locationFilter} onValueChange={setLocationFilter}>
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-5">
               <TabsTrigger value="all">All Locations</TabsTrigger>
               {LOCATIONS.map(loc => (
                   <TabsTrigger key={loc} value={loc}>{loc}</TabsTrigger>

@@ -287,13 +287,13 @@ function CompanyTransactionsContent() {
             
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
+                    <div className="flex flex-wrap gap-x-6 gap-y-4 text-sm">
                         <div className='flex items-center gap-2'>
-                            <span className="text-muted-foreground">Total Cash Credit:</span>
+                            <span className="text-muted-foreground">Cash Credit:</span>
                             <span className="font-semibold text-green-500">{formatCurrency(summary.cashCredit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
-                            <span className="text-muted-foreground">Total UPI Credit:</span>
+                            <span className="text-muted-foreground">UPI Credit:</span>
                             <span className="font-semibold text-green-500">{formatCurrency(summary.upiCredit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>

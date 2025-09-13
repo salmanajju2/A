@@ -51,14 +51,14 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
     <Collapsible>
         <Card className="w-full">
             <CardHeader className="flex flex-row items-center justify-between p-4 border-b">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 md:gap-4">
                 <Checkbox 
                     checked={isSelected}
                     onCheckedChange={(checked) => onSelect(transaction.id, !!checked)}
                     aria-label={`Select transaction ${transaction.id}`}
                 />
                 <div
-                    className={`flex items-center justify-center h-10 w-10 rounded-full bg-muted`}
+                    className={`hidden md:flex items-center justify-center h-10 w-10 rounded-full bg-muted`}
                 >
                     {isCredit ? (
                     <ArrowUpRight className="h-5 w-5" />
@@ -67,13 +67,13 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                     )}
                 </div>
                 <div>
-                    <p className="font-semibold text-lg">{transaction.customerName || 'N/A'}</p>
-                    <p className="text-sm text-muted-foreground">{formatDate(new Date(transaction.timestamp))}</p>
+                    <p className="font-semibold text-base md:text-lg">{transaction.customerName || 'N/A'}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{formatDate(new Date(transaction.timestamp))}</p>
                 </div>
                 </div>
                 <p
                 className={cn(
-                    'text-xl font-bold',
+                    'text-lg md:text-xl font-bold',
                     isCredit ? 'text-green-500' : 'text-red-500'
                 )}
                 >

@@ -22,6 +22,7 @@ import { useEffect } from 'react';
 import { formatCurrency } from '@/lib/helpers';
 import { ScrollArea } from '../ui/scroll-area';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { cn } from '@/lib/utils';
 
 interface TransactionDialogProps {
   open: boolean;
@@ -138,7 +139,7 @@ export function TransactionDialog({ open, onOpenChange, transactionType, transac
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className={cn("sm:max-w-md w-[90vw] rounded-lg")}>
         <DialogHeader>
           <DialogTitle>{isEditMode ? 'Edit Transaction' : `New: ${currentTransactionType ? TRANSACTION_TYPES[currentTransactionType] : ''}`}</DialogTitle>
           <DialogDescription>
