@@ -17,9 +17,9 @@ export default function QuickActions() {
 
     return (
         <div className="flex items-center gap-2">
-            <Button onClick={() => handleOpenDialog('CASH_CREDIT')}>
+            <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                 <PlusCircle className="mr-2 h-4 w-4" />
-                Add Cash
+                UPI
             </Button>
             <Button variant="secondary" onClick={() => handleOpenDialog('UPI_CREDIT')}>
                 <PlusCircle className="mr-2 h-4 w-4" />
