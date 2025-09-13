@@ -18,6 +18,7 @@ import autoTable from 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
@@ -38,6 +39,7 @@ function CompanyTransactionsContent() {
     const [dialogOpen, setDialogOpen] = useState(false);
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [transactionType, setTransactionType] = useState<TransactionType | null>(null);
+    const [searchTerm, setSearchTerm] = useState('');
     
     const company = searchParams.get('company');
     const location = searchParams.get('location');
@@ -81,8 +83,17 @@ function CompanyTransactionsContent() {
             }
         });
 
-        return Object.entries(summary).sort((a, b) => a[0].localeCompare(b[0]));
-    }, [filteredTransactions]);
+        const sortedSummary = Object.entries(summary).sort((a, b) => a[0].localeCompare(b[0]));
+        
+        if (!searchTerm) {
+            return sortedSummary;
+        }
+
+        return sortedSummary.filter(([name]) => 
+            name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+    }, [filteredTransactions, searchTerm]);
 
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
@@ -309,6 +320,13 @@ function CompanyTransactionsContent() {
                     <CardTitle>Customer Credit Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    <div className="mb-4">
+                        <Input 
+                            placeholder="Search by customer name..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -425,3 +443,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
