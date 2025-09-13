@@ -24,12 +24,30 @@ export default function CompanySummaryPage() {
   const [locationFilter, setLocationFilter] = useState('all');
   const router = useRouter();
 
-  const companySummaries = useMemo(() => {
-    const summaries: Record<string, CompanySummary> = {};
-
-    const filteredTransactions = transactions.filter(tx => 
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(tx => 
       locationFilter === 'all' || tx.location === locationFilter
     );
+  }, [transactions, locationFilter]);
+
+  const overallSummary = useMemo(() => {
+    return filteredTransactions.reduce((acc, tx) => {
+      if (tx.type === 'CASH_CREDIT') {
+        acc.cashCredit += tx.amount;
+      } else if (tx.type === 'UPI_CREDIT') {
+        acc.upiCredit += tx.amount;
+      } else if (tx.type.includes('DEBIT')) {
+        acc.debit += tx.amount;
+      }
+      return acc;
+    }, { cashCredit: 0, upiCredit: 0, debit: 0 });
+  }, [filteredTransactions]);
+
+  const totalCredit = overallSummary.cashCredit + overallSummary.upiCredit;
+  const netBalance = totalCredit - overallSummary.debit;
+
+  const companySummaries = useMemo(() => {
+    const summaries: Record<string, CompanySummary> = {};
 
     filteredTransactions.forEach((tx) => {
       const companyKey = `${tx.companyName || 'NA'}|${tx.location || 'all'}`;
@@ -59,7 +77,7 @@ export default function CompanySummaryPage() {
         const nameB = `${b[1].companyName} ${b[1].location || ''}`.trim();
         return nameA.localeCompare(nameB);
     });
-  }, [transactions, locationFilter]);
+  }, [filteredTransactions]);
 
   const handleRowClick = (summary: CompanySummary) => {
     const params = new URLSearchParams();
@@ -76,6 +94,29 @@ export default function CompanySummaryPage() {
         title="Global Company Balances"
         description="A combined summary of all transactions. Click a row to view details."
       />
+
+      <Card>
+        <CardContent className="pt-6">
+            <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
+                <div className='flex items-center gap-2'>
+                    <span className="text-muted-foreground">Total Cash Credit:</span>
+                    <span className="font-semibold text-green-500">{formatCurrency(overallSummary.cashCredit)}</span>
+                </div>
+                <div className='flex items-center gap-2'>
+                    <span className="text-muted-foreground">Total UPI Credit:</span>
+                    <span className="font-semibold text-green-500">{formatCurrency(overallSummary.upiCredit)}</span>
+                </div>
+                <div className='flex items-center gap-2'>
+                    <span className="text-muted-foreground">Total Debit:</span>
+                    <span className="font-semibold text-red-500">{formatCurrency(overallSummary.debit)}</span>
+                </div>
+                <div className='flex items-center gap-2'>
+                    <span className="text-muted-foreground">Net Balance:</span>
+                    <span className={cn("font-bold", netBalance >= 0 ? 'text-green-500' : 'text-red-500')}>{formatCurrency(netBalance)}</span>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
       
       <Card>
         <CardContent className="pt-6">
