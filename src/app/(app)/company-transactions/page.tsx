@@ -169,7 +169,14 @@ function CompanyTransactionsContent() {
             ],
             [
                 { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
-                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fillColor: '#ffebee', fontStyle: 'bold' } }
+                { 
+                    content: formatCurrency(closingBalance, { symbol: '' }), 
+                    styles: { 
+                        fillColor: closingBalance >= 0 ? '#e9fce9' : '#ffebee', 
+                        textColor: closingBalance >= 0 ? [0, 128, 0] : [255, 0, 0],
+                        fontStyle: 'bold' 
+                    } 
+                }
             ]
         ];
 
@@ -356,6 +363,8 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
 
