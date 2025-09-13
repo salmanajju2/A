@@ -69,6 +69,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const login = (userToLogin: User) => {
     setUser(userToLogin);
+    dispatch({ type: 'SET_USER', payload: userToLogin });
   }
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
