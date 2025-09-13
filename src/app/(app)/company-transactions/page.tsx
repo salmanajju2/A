@@ -16,12 +16,18 @@ import { TRANSACTION_TYPES, COMPANY_NAMES, LOCATIONS } from '@/lib/constants';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useToast } from '@/hooks/use-toast';
-import { numberToWords } from '@/lib/number-to-words';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 // Extend jsPDF with autoTable
 interface jsPDFWithAutoTable extends jsPDF {
     autoTable: (options: any) => jsPDF;
+}
+
+interface CustomerSummary {
+    cashCredit: number;
+    upiCredit: number;
+    totalCredit: number;
 }
 
 function CompanyTransactionsContent() {
@@ -57,6 +63,27 @@ function CompanyTransactionsContent() {
         }, { credit: 0, debit: 0, net: 0 });
     }, [filteredTransactions]);
 
+    const customerSummary = useMemo(() => {
+        const summary: Record<string, CustomerSummary> = {};
+
+        filteredTransactions.forEach((tx) => {
+            if (tx.type.includes('CREDIT') && tx.customerName) {
+                if (!summary[tx.customerName]) {
+                    summary[tx.customerName] = { cashCredit: 0, upiCredit: 0, totalCredit: 0 };
+                }
+
+                if (tx.type === 'CASH_CREDIT') {
+                    summary[tx.customerName].cashCredit += tx.amount;
+                } else if (tx.type === 'UPI_CREDIT') {
+                    summary[tx.customerName].upiCredit += tx.amount;
+                }
+                summary[tx.customerName].totalCredit = summary[tx.customerName].cashCredit + summary[tx.customerName].upiCredit;
+            }
+        });
+
+        return Object.entries(summary).sort((a, b) => a[0].localeCompare(b[0]));
+    }, [filteredTransactions]);
+
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
         setTransactionType(type);
@@ -89,7 +116,6 @@ function CompanyTransactionsContent() {
         
         doc.setFontSize(22);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(0, 0, 0);
         doc.text(mainTitle, doc.internal.pageSize.getWidth() / 2, 15, { align: 'center' });
         
         doc.setFontSize(12);
@@ -238,7 +264,6 @@ function CompanyTransactionsContent() {
     }
     
     const pageTitle = `${company} ${location || ''}`.trim();
-    const isSatinCompany = (company as (typeof COMPANY_NAMES)[number]) === 'SATIN';
 
     return (
         <div className="flex flex-col gap-8">
@@ -278,6 +303,42 @@ function CompanyTransactionsContent() {
                      </div>
                 </div>
             </PageHeader>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle>Customer Credit Summary</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Customer Name</TableHead>
+                                <TableHead className="text-right">Total Cash Credit</TableHead>
+                                <TableHead className="text-right">Total UPI Credit</TableHead>
+                                <TableHead className="text-right font-bold">Total Credit</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {customerSummary.length > 0 ? (
+                                customerSummary.map(([name, summary]) => (
+                                    <TableRow key={name}>
+                                        <TableCell className="font-medium">{name}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(summary.cashCredit)}</TableCell>
+                                        <TableCell className="text-right">{formatCurrency(summary.upiCredit)}</TableCell>
+                                        <TableCell className="text-right font-bold">{formatCurrency(summary.totalCredit)}</TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={4} className="h-24 text-center">
+                                        No customer credit data found.
+                                    </TableCell>
+                                </TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -298,9 +359,16 @@ function CompanyTransactionsContent() {
                                                 <p className="text-sm text-muted-foreground">{TRANSACTION_TYPES[tx.type]}</p>
                                             </div>
                                         </div>
-                                        <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-500' : 'text-red-500')}>
-                                            {formatCurrency(tx.amount)}
-                                        </p>
+                                        <div className='flex items-center gap-4'>
+                                            <p className={cn("text-lg font-bold", tx.type.includes('CREDIT') ? 'text-green-500' : 'text-red-500')}>
+                                                {formatCurrency(tx.amount)}
+                                            </p>
+                                            <CollapsibleTrigger asChild>
+                                                <Button variant="ghost" size="sm" className="p-1 h-auto">
+                                                    <ChevronDown className="h-4 w-4 transition-transform data-[state=open]:rotate-180" />
+                                                </Button>
+                                            </CollapsibleTrigger>
+                                        </div>
                                     </div>
                                     <CollapsibleContent>
                                      <div className='border-t p-4 space-y-2 text-sm'>
@@ -325,14 +393,6 @@ function CompanyTransactionsContent() {
                                         </div>
                                     </div>
                                     </CollapsibleContent>
-                                    <div className="border-t bg-muted/50 p-2 flex justify-start items-center">
-                                        <CollapsibleTrigger asChild>
-                                            <Button variant="ghost" size="sm">
-                                                <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
-                                                Details
-                                            </Button>
-                                        </CollapsibleTrigger>
-                                    </div>
                                 </Collapsible>
                             ))
                         ) : (
@@ -365,13 +425,3 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
-
-    
-
-    
-
-    
-
-    
-
-    
