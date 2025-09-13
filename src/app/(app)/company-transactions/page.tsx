@@ -108,21 +108,21 @@ function CompanyTransactionsContent() {
                 const slots = tx.type === 'CASH_CREDIT' ? customer.cash : customer.upi;
                 const emptyIndex = slots.findIndex(c => c === '');
                 if (emptyIndex !== -1) {
-                    slots[emptyIndex] = formatCurrency(tx.amount, { symbol: '₹' });
+                    slots[emptyIndex] = formatCurrency(tx.amount, { symbol: '' });
                 }
             }
         });
         
         let body = Object.entries(customerCredits).map(([name, data]) => {
             const total = [...data.cash, ...data.upi].reduce((sum: number, val) => {
-                const num = parseFloat(String(val).replace(/[₹,]/g, ''));
+                const num = parseFloat(String(val).replace(/[,]/g, ''));
                 return sum + (isNaN(num) ? 0 : num);
             }, 0);
             return [
-                name,
+                name.toUpperCase(),
                 ...data.cash,
                 ...data.upi,
-                total > 0 ? formatCurrency(total, { symbol: '₹' }) : ''
+                total > 0 ? formatCurrency(total, { symbol: '' }) : ''
             ];
         });
 
@@ -132,7 +132,7 @@ function CompanyTransactionsContent() {
         }
 
         const totalCredit = body.reduce((sum, row) => {
-            const num = parseFloat(String(row[9]).replace(/[₹,]/g, ''));
+            const num = parseFloat(String(row[9]).replace(/[,]/g, ''));
             return sum + (isNaN(num) ? 0 : num);
         }, 0);
 
@@ -140,9 +140,9 @@ function CompanyTransactionsContent() {
         const totalDebit = entryTransactions.reduce((sum, tx) => sum + tx.amount, 0);
         
         const debitEntries: (string | number)[] = Array(8).fill('');
-        entryTransactions.slice(0, 3).forEach((tx, i) => {
-             // Place entries in 2nd, 3rd, 4th cash columns
-            debitEntries[i+1] = formatCurrency(tx.amount, { symbol: '₹' });
+        entryTransactions.slice(0, 8).forEach((tx, i) => {
+             // Place entries in cash columns
+            debitEntries[i] = formatCurrency(tx.amount, { symbol: '' });
         });
 
         const closingBalance = totalCredit - totalDebit;
@@ -159,17 +159,17 @@ function CompanyTransactionsContent() {
 
         const foot = [
             [
-                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right' } },
-                { content: formatCurrency(totalCredit, { symbol: '₹' }), styles: { fillColor: '#e9fce9' } }
+                { content: 'Total Credit', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(totalCredit, { symbol: '' }), styles: { fillColor: '#e9fce9', fontStyle: 'bold' } }
             ],
             [
-                { content: 'Entry' },
+                { content: 'Entry', styles: { fontStyle: 'bold' } },
                 ...debitEntries,
-                { content: formatCurrency(totalDebit, { symbol: '₹' }), styles: { fillColor: '#ffebee' } }
+                { content: formatCurrency(totalDebit, { symbol: '' }), styles: { fillColor: '#ffebee', fontStyle: 'bold' } }
             ],
             [
-                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right' } },
-                { content: formatCurrency(closingBalance, { symbol: '₹' }), styles: { fillColor: '#ffebee' } }
+                { content: 'Closing Balance', colSpan: 9, styles: { halign: 'right', fontStyle: 'bold' } },
+                { content: formatCurrency(closingBalance, { symbol: '' }), styles: { fillColor: '#ffebee', fontStyle: 'bold' } }
             ]
         ];
 
@@ -206,12 +206,14 @@ function CompanyTransactionsContent() {
             },
             didParseCell: (data) => {
                  if (data.section === 'foot') {
-                    if (data.row.index === 1 && data.column.index > 0) {
-                         if (data.column.index <=8) {
-                             data.cell.styles.halign = 'right';
-                         }
+                    data.cell.styles.fontStyle = 'bold';
+                    if (data.row.index === 1 && data.column.index > 0 && data.column.index < 9) {
+                         data.cell.styles.halign = 'right';
                     }
                 }
+                 if (data.section === 'body') {
+                     data.cell.styles.fontStyle = 'bold';
+                 }
             }
         });
     
@@ -354,6 +356,8 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
 
     
 
