@@ -5,15 +5,16 @@ import { useAppContext } from '@/context/app-context';
 import { Card, CardContent } from '@/components/ui/card';
 import { HistoryToolbar } from '@/components/history/history-toolbar';
 import type { Transaction } from '@/lib/types';
+import { PageHeader } from '@/components/shared/page-header';
 
 function HistoryPageContent() {
-    const { transactions } = useAppContext();
+    const { transactions, deleteTransactions } = useAppContext();
 
     const globalTransactions = useMemo(() => {
-        return transactions.filter(t => !t.scope || t.scope === 'global');
+        return transactions.filter(t => !t.scope || t.scope === 'global').sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [transactions]);
     
-    const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>(globalTransactions);
+    const [filteredTransactions, setFilteredTransactions] = useState<Transaction[]>([]);
     const [selectedTransactions, setSelectedTransactions] = useState<string[]>([]);
 
     const handleToggleAll = (isChecked: boolean) => {
@@ -31,36 +32,48 @@ function HistoryPageContent() {
             setSelectedTransactions(prev => prev.filter(tId => tId !== id));
         }
     };
+    
+    // When filteredTransactions updates, ensure selected are still valid
+    useState(() => {
+        const filteredIds = new Set(filteredTransactions.map(t => t.id));
+        setSelectedTransactions(prev => prev.filter(id => filteredIds.has(id)));
+    }, [filteredTransactions]);
 
     return (
-        <div className="flex flex-col gap-4">
-            <HistoryToolbar 
-                transactions={globalTransactions} 
-                onFilter={setFilteredTransactions}
-                selectedCount={selectedTransactions.length}
-                totalCount={filteredTransactions.length}
-                onToggleAll={handleToggleAll}
-                selectedIds={selectedTransactions}
+        <div className="flex flex-col gap-8">
+            <PageHeader
+                title="Global Transaction History"
+                description="Review, filter, and manage all non-company-specific transactions."
             />
-            
-            {filteredTransactions.length > 0 ? (
-                <div className="space-y-4">
-                    {filteredTransactions.map((transaction) => (
-                        <TransactionCard 
-                            key={transaction.id}
-                            transaction={transaction}
-                            isSelected={selectedTransactions.includes(transaction.id)}
-                            onSelect={handleSelectTransaction}
-                        />
-                    ))}
-                </div>
-            ) : (
-                <Card>
-                    <CardContent className="pt-6">
-                        <p className="text-center text-muted-foreground">No transactions match your filters.</p>
-                    </CardContent>
-                </Card>
-            )}
+            <div className="flex flex-col gap-4">
+                <HistoryToolbar 
+                    transactions={globalTransactions} 
+                    onFilter={setFilteredTransactions}
+                    selectedCount={selectedTransactions.length}
+                    totalCount={filteredTransactions.length}
+                    onToggleAll={handleToggleAll}
+                    selectedIds={selectedTransactions}
+                />
+                
+                {filteredTransactions.length > 0 ? (
+                    <div className="space-y-4">
+                        {filteredTransactions.map((transaction) => (
+                            <TransactionCard 
+                                key={transaction.id}
+                                transaction={transaction}
+                                isSelected={selectedTransactions.includes(transaction.id)}
+                                onSelect={handleSelectTransaction}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <Card>
+                        <CardContent className="pt-6">
+                            <p className="text-center text-muted-foreground">No transactions match your filters.</p>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
         </div>
     );
 }
