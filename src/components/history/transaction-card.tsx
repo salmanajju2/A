@@ -27,6 +27,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { DenominationBreakdown } from './denomination-breakdown';
 import { TransactionDialog } from '../transactions/transaction-dialog';
+import { cn } from '@/lib/utils';
 
 interface TransactionCardProps {
   transaction: Transaction;
@@ -71,7 +72,10 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                 </div>
                 </div>
                 <p
-                className={`text-xl font-bold`}
+                className={cn(
+                    'text-xl font-bold',
+                    isCredit ? 'text-green-500' : 'text-red-500'
+                )}
                 >
                 {formatCurrency(transaction.amount)}
                 </p>
