@@ -123,7 +123,6 @@ function CompanyTransactionsContent() {
             ];
         });
         
-        // Add empty rows to match the image structure
         const requiredRows = 10;
         while (body.length < requiredRows) {
             body.push(['', '', '', '', '', '', '', '', '', '', '', '0']);
@@ -156,18 +155,20 @@ function CompanyTransactionsContent() {
 
         const foot = [
              [
-                { content: 'TOTAL', colSpan: 11, styles: { halign: 'right' } },
-                { content: totalCredit.toFixed(0), styles: { textColor: [0, 128, 0] } } // Green
+                { content: 'TOTAL', colSpan: 1, styles: { halign: 'left' } },
+                { content: '' , colSpan: 10, styles: { halign: 'right' } },
+                { content: totalCredit.toFixed(0), styles: { halign: 'right' } }
             ],
             [
                 { content: 'ENTRY' },
                 ...debitEntries,
                 { content: '', colSpan: 5},
-                { content: totalDebit.toFixed(0), styles: { textColor: [255, 0, 0] } } // Red
+                { content: totalDebit.toFixed(0), styles: { halign: 'right' } }
             ],
             [
-                { content: 'CLOSING BALANCE', colSpan: 11, styles: { halign: 'right' } },
-                { content: closingBalance.toFixed(0), styles: { textColor: [0, 128, 0] } } // Green
+                { content: 'CLOSING BALANCE', colSpan: 1, styles: { halign: 'left' } },
+                { content: '', colSpan: 10, styles: { halign: 'right' } },
+                { content: closingBalance.toFixed(0), styles: { halign: 'right' } }
             ]
         ];
 
@@ -185,33 +186,49 @@ function CompanyTransactionsContent() {
                 textColor: [0, 0, 0],
             },
             headStyles: {
+                fillColor: '#008080',
+                textColor: [0, 0, 0],
                 halign: 'center',
                 valign: 'middle',
                 fontStyle: 'bold',
             },
             footStyles: {
+                fillColor: '#008080',
+                textColor: [0, 0, 0],
                 fontStyle: 'bold',
-                halign: 'right',
             },
             columnStyles: {
-                0: { halign: 'left', fontStyle: 'bold' },
+                0: { halign: 'left' },
                 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' },
                 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right' }, 10: { halign: 'right' },
-                11: { halign: 'right', fontStyle: 'bold' },
+                11: { halign: 'right' },
             },
-            didParseCell: function (data) {
-                // Custom alignment for footer
+             didParseCell: function (data) {
                 if (data.section === 'foot') {
-                    data.cell.styles.halign = 'right';
-                    // The first column should be left aligned
-                    if (data.column.index === 0) {
-                         data.cell.styles.halign = 'left';
+                     // TOTAL row
+                    if (data.row.index === 0) {
+                        if (data.column.index === 0) {
+                           data.cell.styles.halign = 'left';
+                           data.cell.colSpan = 11;
+                        }
                     }
-                    // For the "ENTRY" row, specific columns should be right aligned.
-                    if (data.row.index === 1) { // ENTRY row
-                        if (data.column.index > 0 && data.column.index <= 5) {
-                             data.cell.styles.halign = 'right';
-                             data.cell.styles.textColor = [255, 0, 0];
+                    // ENTRY row
+                    if (data.row.index === 1) {
+                         if (data.column.index === 0) {
+                           data.cell.styles.halign = 'left';
+                        } else if (data.column.index > 0 && data.column.index < 6) {
+                            data.cell.styles.halign = 'right';
+                        } else if (data.column.index === 11) {
+                            data.cell.styles.halign = 'right';
+                        } else {
+                            data.cell.styles.halign = 'center';
+                        }
+                    }
+                    // CLOSING BALANCE row
+                     if (data.row.index === 2) {
+                         if (data.column.index === 0) {
+                           data.cell.styles.halign = 'left';
+                           data.cell.colSpan = 11;
                         }
                     }
                 }
@@ -357,3 +374,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
