@@ -17,7 +17,6 @@ import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
-import { ThemeToggle } from '../shared/theme-toggle';
 import { Logo } from '../shared/logo';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
 
@@ -45,7 +44,7 @@ export function Header() {
         <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold md:text-base">
             <Logo />
-            <span className="sr-only">Denomination Depot</span>
+            <span className="sr-only">ALI ENTERPRISES</span>
           </Link>
           {menuItems.map(item => (
               <Link
@@ -79,7 +78,7 @@ export function Header() {
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Logo />
-                  <span className="sr-only">Denomination Depot</span>
+                  <span className="sr-only">ALI ENTERPRISES</span>
                 </Link>
                 {menuItems.map(item => (
                   <Link
@@ -99,7 +98,6 @@ export function Header() {
 
 
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
-        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
