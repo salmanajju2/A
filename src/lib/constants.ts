@@ -59,4 +59,7 @@ export const LOCAL_STORAGE_KEYS = {
   LAST_USER_ID: 'denomination-depot-last-user-id',
 };
 
-    
+// IMPORTANT: Add the Gmail addresses of users you want to allow.
+export const AUTHORIZED_EMAILS = [
+  'your-email@gmail.com',
+] as const;

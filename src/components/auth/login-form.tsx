@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardFooter } from '../ui/card';
-import { signInWithGoogle } from '@/lib/firebase';
+import { auth, signInWithGoogle } from '@/lib/firebase';
 import { useAppContext } from '@/context/app-context';
+import { AUTHORIZED_EMAILS } from '@/lib/constants';
 
 export function LoginForm() {
   const router = useRouter();
@@ -18,13 +19,20 @@ export function LoginForm() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      const user = await signInWithGoogle();
-      if (user) {
+      const userCredential = await signInWithGoogle();
+      if (userCredential && userCredential.email && AUTHORIZED_EMAILS.includes(userCredential.email as any)) {
         toast({
           title: 'Login Successful',
           description: "Welcome! Redirecting to your dashboard.",
         });
         router.push('/dashboard');
+      } else {
+        await auth.signOut();
+        toast({
+          variant: 'destructive',
+          title: 'Authorization Failed',
+          description: 'You are not authorized to use this application.',
+        });
       }
     } catch (error) {
       console.error("Google Sign-In Error:", error);
@@ -33,7 +41,8 @@ export function LoginForm() {
         title: 'Login Failed',
         description: 'Could not sign in with Google. Please try again.',
       });
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
   
@@ -79,5 +88,3 @@ export function LoginForm() {
     </Card>
   );
 }
-
-    
