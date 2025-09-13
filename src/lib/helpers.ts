@@ -1,8 +1,10 @@
 export const formatCurrency = (amount: number, options?: { symbol?: string }) => {
+  const isInteger = amount % 1 === 0;
+
   const defaultOptions = {
     style: 'currency',
     currency: 'INR',
-    minimumFractionDigits: 2,
+    minimumFractionDigits: isInteger ? 0 : 2,
     maximumFractionDigits: 2,
   };
 
