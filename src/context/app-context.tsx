@@ -3,35 +3,35 @@
 import { createContext, useContext, useReducer, ReactNode, useEffect, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { LOCAL_STORAGE_KEYS } from '@/lib/constants';
-import type { User, Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload } from '@/lib/types';
-import { DENOMINATIONS } from '@/lib/constants';
+import type { Transaction, DenominationVault, DenominationCount, TransactionUpdatePayload } from '@/lib/types';
 import { initialTransactions, initialVault } from '@/lib/initial-data';
-
+import { auth } from '@/lib/firebase';
+import type { User as FirebaseUser } from 'firebase/auth';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { useRouter } from 'next/navigation';
 
 type AppState = {
-  user: User | null;
+  user: FirebaseUser | null;
   transactions: Transaction[];
   vault: DenominationVault;
   isInitialized: boolean;
 };
-
-const defaultUser: User = { id: '1', email: 'user@example.com', name: 'Ali Enterprises' };
 
 type AppContextType = AppState & {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => void;
   updateTransaction: (transactionId: string, updates: TransactionUpdatePayload) => void;
   updateVault: (newVault: Partial<DenominationVault>) => void;
   deleteTransactions: (transactionIds: string[]) => void;
-  login: (user: User) => void;
+  logout: () => Promise<void>;
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 type Action =
-  | { type: 'SET_USER'; payload: User | null }
+  | { type: 'SET_USER'; payload: FirebaseUser | null }
   | { type: 'SET_TRANSACTIONS'; payload: Transaction[] }
   | { type: 'SET_VAULT'; payload: DenominationVault }
-  | { type: 'INITIALIZE' };
+  | { type: 'INITIALIZE'; payload: { user: FirebaseUser | null } };
 
 const appReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
@@ -42,14 +42,14 @@ const appReducer = (state: AppState, action: Action): AppState => {
     case 'SET_VAULT':
       return { ...state, vault: action.payload };
     case 'INITIALIZE':
-      return { ...state, isInitialized: true };
+      return { ...state, isInitialized: true, user: action.payload.user };
     default:
       return state;
   }
 };
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useLocalStorage<User | null>(LOCAL_STORAGE_KEYS.USER, null);
+  const router = useRouter();
   const [transactions, setTransactions] = useLocalStorage<Transaction[]>(LOCAL_STORAGE_KEYS.TRANSACTIONS, initialTransactions);
   const [vault, setVault] = useLocalStorage<DenominationVault>(LOCAL_STORAGE_KEYS.VAULT, initialVault);
 
@@ -61,19 +61,31 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   });
 
   useEffect(() => {
-    dispatch({ type: 'SET_USER', payload: user });
-    dispatch({ type: 'SET_TRANSACTIONS', payload: transactions });
-    dispatch({ type: 'SET_VAULT', payload: vault });
-    dispatch({ type: 'INITIALIZE' });
-  }, [user, transactions, vault]);
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      dispatch({ type: 'INITIALIZE', payload: { user } });
+      if (!user) {
+         router.push('/login');
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
-  const login = (userToLogin: User) => {
-    setUser(userToLogin);
-    dispatch({ type: 'SET_USER', payload: userToLogin });
-  }
+  useEffect(() => {
+    if (state.isInitialized) {
+      dispatch({ type: 'SET_TRANSACTIONS', payload: transactions });
+      dispatch({ type: 'SET_VAULT', payload: vault });
+    }
+  }, [state.isInitialized, transactions, vault]);
+
+  const logout = async () => {
+    await signOut(auth);
+    dispatch({ type: 'SET_USER', payload: null });
+  };
   
   const addTransaction = (transaction: Omit<Transaction, 'id' | 'timestamp' | 'recordedBy'>) => {
-    if (!state.user) throw new Error("User not loaded");
+    if (!state.user || !state.user.email) {
+      throw new Error("User not loaded or email is missing");
+    }
     
     const newTransaction: Transaction = {
       ...transaction,
@@ -131,7 +143,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
 
   const contextValue = useMemo(() => ({
     ...state,
-    login,
+    logout,
     addTransaction,
     updateTransaction,
     updateVault,

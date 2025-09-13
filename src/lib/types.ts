@@ -1,4 +1,5 @@
 import { TRANSACTION_TYPES } from './constants';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 export type Denomination = {
   value: number;
@@ -38,11 +39,7 @@ export interface Transaction {
 
 export type TransactionUpdatePayload = Partial<Omit<Transaction, 'id' | 'timestamp' | 'recordedBy' | 'type'>>
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+export type User = FirebaseUser;
 
 export interface DenominationVault {
   denominations: DenominationCount;

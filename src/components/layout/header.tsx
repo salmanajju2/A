@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,13 +12,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, History, Landmark, Menu, Building, PlusCircle, MinusCircle } from 'lucide-react';
+import { LayoutDashboard, History, Landmark, Menu, Building, PlusCircle, MinusCircle, LogOut } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Link from 'next/link';
 import { Logo } from '../shared/logo';
 import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
+import { auth } from '@/lib/firebase';
 
 const menuItems = [
   { href: '/dashboard', label: 'Add Cash', icon: PlusCircle },
@@ -29,10 +29,14 @@ const menuItems = [
 ];
 
 export function Header() {
-  const { user } = useAppContext();
+  const { user, logout } = useAppContext();
   const pathname = usePathname();
-  
-  const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
+  }
 
   // We want to hide the header on the company-transactions page
   if (pathname === '/company-transactions') {
@@ -102,20 +106,25 @@ export function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={userAvatar?.imageUrl} alt={user?.name} data-ai-hint={userAvatar?.imageHint} />
-                <AvatarFallback>{user?.name?.charAt(0)}</AvatarFallback>
+                <AvatarImage src={user?.photoURL || undefined} alt={user?.displayName || ''} />
+                <AvatarFallback>{user?.displayName?.charAt(0)}</AvatarFallback>
               </Avatar>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name}</p>
+                <p className="text-sm font-medium leading-none">{user?.displayName}</p>
                 <p className="text-xs leading-none text-muted-foreground">
                   {user?.email}
                 </p>
               </div>
             </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Log out</span>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

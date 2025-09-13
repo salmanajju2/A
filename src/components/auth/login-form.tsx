@@ -2,106 +2,61 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogIn } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardFooter } from '../ui/card';
-
-const loginSchema = z.object({
-  email: z.string().email({ message: 'Invalid email address.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+import { signInWithGoogle } from '@/lib/firebase';
 
 export function LoginForm() {
   const router = useRouter();
-  const { login } = useAppContext();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  const onSubmit = (data: LoginFormValues) => {
+  const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      if (data.email.toLowerCase() === 'user@example.com') {
-        login({ id: '1', email: 'user@example.com', name: 'Ali Enterprises' });
+    try {
+      const user = await signInWithGoogle();
+      if (user) {
         toast({
           title: 'Login Successful',
-          description: "Welcome back! Redirecting to your dashboard.",
+          description: "Welcome! Redirecting to your dashboard.",
         });
         router.push('/dashboard');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Login Failed',
-          description: 'Invalid credentials. Please try again.',
-        });
-        setIsLoading(false);
       }
-    }, 1000);
+    } catch (error) {
+      console.error("Google Sign-In Error:", error);
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Could not sign in with Google. Please try again.',
+      });
+      setIsLoading(false);
+    }
   };
 
   return (
     <Card>
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4 pt-6">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="user@example.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input type="password" placeholder="••••••••" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <Loader2 className="animate-spin" />
-              ) : (
-                <>
-                  <LogIn className="mr-2" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
+      <CardContent className="pt-6">
+        <p className="text-center text-sm text-muted-foreground">
+          Sign in to continue to your account.
+        </p>
+      </CardContent>
+      <CardFooter>
+        <Button onClick={handleGoogleSignIn} disabled={isLoading} className="w-full">
+          {isLoading ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <>
+              <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512">
+                <path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-72.2 72.2C322 113.2 287.3 96 248 96c-88.8 0-160.1 71.1-160.1 160.1s71.3 160.1 160.1 160.1c98.2 0 135-70.4 140.8-106.9H248v-85.3h236.1c2.3 12.7 3.9 26.9 3.9 41.4z"></path>
+              </svg>
+              Sign in with Google
+            </>
+          )}
+        </Button>
+      </CardFooter>
     </Card>
   );
 }
