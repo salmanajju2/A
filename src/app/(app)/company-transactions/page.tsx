@@ -312,14 +312,7 @@ function CompanyTransactionsContent() {
                                             </div>
                                          )}
                                     </div>
-                                    </CollapsibleContent>
-                                    <div className="border-t bg-muted/50 p-2 flex justify-between items-center">
-                                        <CollapsibleTrigger asChild>
-                                            <Button variant="ghost" size="sm">
-                                                <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
-                                                Details
-                                            </Button>
-                                        </CollapsibleTrigger>
+                                    <div className="border-t bg-muted/50 p-2 flex justify-end items-center">
                                         <div className='flex justify-end gap-2'>
                                             <Button variant="ghost" size="sm" onClick={() => handleEdit(tx)}>
                                                 <Pencil className="mr-2 h-3 w-3" />
@@ -330,6 +323,15 @@ function CompanyTransactionsContent() {
                                                 Delete
                                             </Button>
                                         </div>
+                                    </div>
+                                    </CollapsibleContent>
+                                    <div className="border-t bg-muted/50 p-2 flex justify-start items-center">
+                                        <CollapsibleTrigger asChild>
+                                            <Button variant="ghost" size="sm">
+                                                <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
+                                                Details
+                                            </Button>
+                                        </CollapsibleTrigger>
                                     </div>
                                 </Collapsible>
                             ))

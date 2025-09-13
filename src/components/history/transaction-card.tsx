@@ -88,15 +88,7 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
 
                     <DenominationBreakdown denominations={transaction.denominations} />
                 </CardContent>
-            </CollapsibleContent>
-            <CardFooter className="p-4 flex justify-between">
-                <CollapsibleTrigger asChild>
-                     <Button variant="ghost" size="sm">
-                        <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
-                        Details
-                    </Button>
-                </CollapsibleTrigger>
-                <div className="flex justify-end gap-2">
+                <CardFooter className="p-2 flex justify-end gap-2 bg-muted/50 border-t">
                     <Button variant="outline" size="sm" onClick={() => setIsEditDialogOpen(true)}>
                         <Pencil className="mr-2 h-4 w-4" />
                         Edit
@@ -105,7 +97,15 @@ export function TransactionCard({ transaction, isSelected, onSelect }: Transacti
                         <Trash className="mr-2 h-4 w-4" />
                         Delete
                     </Button>
-                </div>
+                </CardFooter>
+            </CollapsibleContent>
+            <CardFooter className="p-2 flex justify-start">
+                <CollapsibleTrigger asChild>
+                     <Button variant="ghost" size="sm">
+                        <ChevronDown className="h-4 w-4 mr-2 transition-transform data-[state=open]:rotate-180" />
+                        Details
+                    </Button>
+                </CollapsibleTrigger>
             </CardFooter>
         </Card>
         
