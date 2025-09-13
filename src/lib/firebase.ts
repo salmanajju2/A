@@ -6,9 +6,9 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, User } from "firebase/aut
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-  authDomain: "REPLACE_WITH_YOUR_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_YOUR_PROJECT_ID",
+  apiKey: "AIzaSyBdNQlzrKMtICXUfGgYsGsNCpUtaUYD6ik",
+  authDomain: "studio-6532201573-aedb1.firebaseapp.com",
+  projectId: "studio-6532201573-aedb1",
   storageBucket: "REPLACE_WITH_YOUR_STORAGE_BUCKET",
   messagingSenderId: "REPLACE_WITH_YOUR_MESSAGING_SENDER_ID",
   appId: "REPLACE_WITH_YOUR_APP_ID"
