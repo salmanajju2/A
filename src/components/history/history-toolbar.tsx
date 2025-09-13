@@ -11,7 +11,7 @@ import { Calendar } from '../ui/calendar';
 import { DateRange } from 'react-day-picker';
 import { format, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { TRANSACTION_TYPES } from '@/lib/constants';
+import { DENOMINATIONS, TRANSACTION_TYPES } from '@/lib/constants';
 import { formatCurrency, formatDate } from '@/lib/helpers';
 import { useAppContext } from '@/context/app-context';
 import { useToast } from '@/hooks/use-toast';
@@ -93,18 +93,31 @@ export function HistoryToolbar({
   };
   
   const handleExport = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF('landscape');
+    
+    const formatDenominations = (denominations: Transaction['denominations']) => {
+        if (!denominations || Object.keys(denominations).length === 0) return 'N/A';
+        return DENOMINATIONS.map(d => {
+            const key = `d${d.value}` as keyof typeof denominations;
+            const count = denominations[key];
+            return count ? `${d.label}x${count}`: null;
+        }).filter(Boolean).join(', ');
+    };
+
     const tableData = transactions
         .filter(tx => selectedIds.includes(tx.id))
         .map(tx => [
             formatDate(new Date(tx.timestamp)),
             TRANSACTION_TYPES[tx.type],
-            tx.customerName || '',
+            tx.customerName || 'N/A',
+            tx.companyName || 'N/A',
+            tx.location || 'N/A',
             formatCurrency(tx.amount),
+            formatDenominations(tx.denominations),
         ]);
 
     autoTable(doc, {
-        head: [['Date', 'Type', 'Customer', 'Amount']],
+        head: [['Date', 'Type', 'Customer', 'Company', 'Location', 'Amount', 'Denominations']],
         body: tableData,
     });
     doc.save(`transactions-export-${new Date().toISOString().split('T')[0]}.pdf`);
