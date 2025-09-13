@@ -66,9 +66,9 @@ function CompanyTransactionsContent() {
         return txnsToSummarize.reduce((acc, tx) => {
             if (tx.type.includes('CREDIT')) {
                 acc.credit += tx.amount;
-                if (tx.type.includes('CASH')) {
+                if (tx.type === 'CASH_CREDIT') {
                     acc.cashCredit += tx.amount;
-                } else if (tx.type.includes('UPI')) {
+                } else if (tx.type === 'UPI_CREDIT') {
                     acc.upiCredit += tx.amount;
                 }
             } else {
@@ -290,19 +290,19 @@ function CompanyTransactionsContent() {
                     <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Cash Credit:</span>
-                            <span className="font-semibold">{formatCurrency(summary.cashCredit)}</span>
+                            <span className="font-semibold text-green-500">{formatCurrency(summary.cashCredit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total UPI Credit:</span>
-                            <span className="font-semibold">{formatCurrency(summary.upiCredit)}</span>
+                            <span className="font-semibold text-green-500">{formatCurrency(summary.upiCredit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Credit:</span>
-                            <span className="font-semibold">{formatCurrency(summary.credit)}</span>
+                            <span className="font-semibold text-green-500">{formatCurrency(summary.credit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Debit:</span>
-                            <span className="font-semibold">{formatCurrency(summary.debit)}</span>
+                            <span className="font-semibold text-red-500">{formatCurrency(summary.debit)}</span>
                         </div>
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
@@ -404,3 +404,5 @@ export default function CompanyTransactionsPage() {
         </Suspense>
     )
 }
+
+    
