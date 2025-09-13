@@ -12,21 +12,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LayoutDashboard, History, Landmark, Menu, Building, PlusCircle, MinusCircle, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAppContext } from '@/context/app-context';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Logo } from '../shared/logo';
-import { Sheet, SheetContent, SheetTrigger } from '../ui/sheet';
-import { auth } from '@/lib/firebase';
+import { menuItems } from './menu-items';
 
-const menuItems = [
-  { href: '/dashboard', label: 'Add Cash', icon: PlusCircle },
-  { href: '/cash-debit', label: 'Cash Debit', icon: MinusCircle },
-  { href: '/history', label: 'History', icon: History },
-  { href: '/vault', label: 'Vault', icon: Landmark },
-  { href: '/company-summary', label: 'Company Summary', icon: Building },
-];
 
 export function Header() {
   const { user, logout } = useAppContext();
@@ -38,14 +30,14 @@ export function Header() {
     router.push('/login');
   }
 
-  // We want to hide the header on the company-transactions page
+  // Hide the header on the company-transactions page and on mobile
   if (pathname === '/company-transactions') {
     return null;
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:px-6">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+    <header className="sticky top-0 z-10 hidden h-16 items-center gap-4 border-b bg-background/80 px-4 backdrop-blur-sm md:flex md:px-6">
+        <nav className="flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           <Link href="/dashboard" className="flex items-center gap-2 text-lg font-semibold md:text-base">
             <Logo />
             <span className="sr-only">ALI ENTERPRISES</span>
@@ -64,43 +56,6 @@ export function Header() {
           ))}
         </nav>
         
-        <Sheet>
-            <SheetTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="shrink-0 md:hidden"
-              >
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle navigation menu</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left">
-              <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Logo />
-                  <span className="sr-only">ALI ENTERPRISES</span>
-                </Link>
-                {menuItems.map(item => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "hover:text-foreground",
-                      pathname === item.href ? "text-foreground" : "text-muted-foreground"
-                    )}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
-            </SheetContent>
-        </Sheet>
-
-
       <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
