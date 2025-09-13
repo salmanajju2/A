@@ -53,9 +53,11 @@ function CompanyTransactionsContent() {
 
         return filtered.sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     }, [transactions, company, location, searchTerm]);
-
+    
     const summary = useMemo(() => {
-        const txnsToSummarize = transactions.filter(t => {
+        // If there's a search term, summarize based on filtered transactions.
+        // Otherwise, summarize all transactions for the company/location.
+        const txnsToSummarize = searchTerm ? filteredTransactions : transactions.filter(t => {
             const companyMatch = t.companyName === company;
             const locationMatch = !location || t.location === location;
             return companyMatch && locationMatch;
@@ -64,13 +66,18 @@ function CompanyTransactionsContent() {
         return txnsToSummarize.reduce((acc, tx) => {
             if (tx.type.includes('CREDIT')) {
                 acc.credit += tx.amount;
+                if (tx.type.includes('CASH')) {
+                    acc.cashCredit += tx.amount;
+                } else if (tx.type.includes('UPI')) {
+                    acc.upiCredit += tx.amount;
+                }
             } else {
                 acc.debit += tx.amount;
             }
             acc.net = acc.credit - acc.debit;
             return acc;
-        }, { credit: 0, debit: 0, net: 0 });
-    }, [transactions, company, location]);
+        }, { credit: 0, debit: 0, net: 0, cashCredit: 0, upiCredit: 0 });
+    }, [transactions, company, location, searchTerm, filteredTransactions]);
 
     const handleOpenDialog = (type: TransactionType) => {
         setEditingTransaction(null);
@@ -259,41 +266,52 @@ function CompanyTransactionsContent() {
         <div className="flex flex-col gap-8">
             <PageHeader
                 title={pageTitle}
-                description={`A summary of ${totalTransactions} transactions.`}
+                description={searchTerm ? `Showing results for "${searchTerm}"` :`A summary of ${totalTransactions} transactions.`}
             >
-                <div className='flex flex-col gap-4 items-end'>
-                    <div className="flex gap-8 text-sm pt-2">
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add UPI
+                    </Button>
+                    <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Add Entry
+                    </Button>
+                    <Button variant="secondary" onClick={handleDownloadPdf}>
+                        <FileDown className="mr-2 h-4 w-4" />
+                        PDF
+                    </Button>
+                    <Button onClick={() => router.back()}>Go Back</Button>
+                </div>
+            </PageHeader>
+            
+            <Card>
+                <CardContent className="pt-6">
+                    <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
+                        <div className='flex items-center gap-2'>
+                            <span className="text-muted-foreground">Total Cash Credit:</span>
+                            <span className="font-semibold">{formatCurrency(summary.cashCredit)}</span>
+                        </div>
+                        <div className='flex items-center gap-2'>
+                            <span className="text-muted-foreground">Total UPI Credit:</span>
+                            <span className="font-semibold">{formatCurrency(summary.upiCredit)}</span>
+                        </div>
                         <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Credit:</span>
                             <span className="font-semibold">{formatCurrency(summary.credit)}</span>
                         </div>
-                         <div className='flex items-center gap-2'>
+                        <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Total Debit:</span>
                             <span className="font-semibold">{formatCurrency(summary.debit)}</span>
                         </div>
-                         <div className='flex items-center gap-2'>
+                        <div className='flex items-center gap-2'>
                             <span className="text-muted-foreground">Net Balance:</span>
                             <span className={cn("font-bold", summary.net >= 0 ? 'text-green-500' : 'text-red-500')}>{formatCurrency(summary.net)}</span>
                         </div>
                     </div>
-                     <div className="flex items-center gap-2">
-                         <Button variant="outline" onClick={() => handleOpenDialog('UPI_CREDIT')}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Add UPI
-                        </Button>
-                        <Button variant="outline" onClick={() => handleOpenDialog('COMPANY_ADJUSTMENT_DEBIT')}>
-                             <PlusCircle className="mr-2 h-4 w-4" />
-                            Add Entry
-                        </Button>
-                        <Button variant="secondary" onClick={handleDownloadPdf}>
-                            <FileDown className="mr-2 h-4 w-4" />
-                            PDF
-                        </Button>
-                        <Button onClick={() => router.back()}>Go Back</Button>
-                     </div>
-                </div>
-            </PageHeader>
-            
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Transaction History</CardTitle>
